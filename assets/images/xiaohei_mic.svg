@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <!-- 小黑：拿话筒认真唱 -->
+  <g fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M104 196 L100 226"/>
+    <path d="M136 196 L140 226"/>
+  </g>
+  <path d="M120 40 C78 40 62 88 62 132 C62 178 86 200 120 200 C154 200 178 178 178 132 C178 88 162 40 120 40 Z"
+        fill="#1a1a1a" stroke="#1a1a1a" stroke-width="2"/>
+  <circle cx="102" cy="114" r="13" fill="#fff"/>
+  <circle cx="142" cy="114" r="13" fill="#fff"/>
+  <circle cx="105" cy="116" r="4.5" fill="#1a1a1a"/>
+  <circle cx="145" cy="116" r="4.5" fill="#1a1a1a"/>
+  <!-- 小嘴 -->
+  <path d="M112 150 Q122 160 132 150" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+  <!-- 细胳膊伸出去拿话筒 -->
+  <path d="M168 150 L196 168" fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+  <!-- 话筒：握杆 + 网头 -->
+  <path d="M196 168 L214 186" fill="none" stroke="#1a1a1a" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="222" cy="194" r="13" fill="#1a1a1a"/>
+  <circle cx="222" cy="194" r="13" fill="none" stroke="#fff" stroke-width="2"/>
+  <path d="M214 190 L230 198 M216 186 L228 202" stroke="#fff" stroke-width="1.6"/>
+</svg>

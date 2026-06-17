@@ -1,0 +1,13 @@
+{
+  "name": "DT-in-the-desktop",
+  "version": "1.0.0",
+  "description": "陶喆主题桌面宠物:点击换图并随机播放一段音频",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}

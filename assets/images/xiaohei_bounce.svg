@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <!-- 小黑：蹦跳（点击反馈）双手举起、腿弯 -->
+  <g fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 弯起来的腿 -->
+    <path d="M104 192 L94 210 L104 224"/>
+    <path d="M136 192 L146 210 L136 224"/>
+  </g>
+  <path d="M120 44 C80 44 64 90 64 132 C64 176 88 196 120 196 C152 196 176 176 176 132 C176 90 160 44 120 44 Z"
+        fill="#1a1a1a" stroke="#1a1a1a" stroke-width="2"/>
+  <!-- 兴奋的眼 -->
+  <circle cx="101" cy="112" r="13" fill="#fff"/>
+  <circle cx="141" cy="112" r="13" fill="#fff"/>
+  <circle cx="101" cy="110" r="4.5" fill="#1a1a1a"/>
+  <circle cx="141" cy="110" r="4.5" fill="#1a1a1a"/>
+  <!-- 张嘴 -->
+  <ellipse cx="121" cy="150" rx="11" ry="14" fill="#fff"/>
+  <!-- 举起的细胳膊 -->
+  <path d="M70 120 L46 96" fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+  <path d="M170 120 L194 96" fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+  <!-- 蹦跳动感线（红色强调） -->
+  <g stroke="#e23b3b" stroke-width="3.5" stroke-linecap="round" fill="none">
+    <path d="M40 86 L34 78"/>
+    <path d="M200 86 L206 78"/>
+    <path d="M120 30 L120 20"/>
+  </g>
+</svg>
