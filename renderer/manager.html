@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline';" />
+  <title>管理素材</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: #1d1d1f;
+      font-size: 14px;
+      background: #0c0b0a;
+      position: relative;
+    }
+    /* 深色底 + 右上角柔和橙光晕,让白卡片更跳 */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(820px 420px at 100% -8%, rgba(255,140,26,.30), transparent 60%),
+        radial-gradient(620px 360px at -6% 8%, rgba(246,192,0,.10), transparent 55%),
+        #0c0b0a;
+    }
+
+    .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 22px; }
+
+    /* 顶部品牌头 */
+    .header {
+      padding: 22px 4px 14px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .header h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #fff;
+      line-height: 1.05;
+    }
+    .header h2 .slash { color: #ff8c1a; }
+    .header .en {
+      margin-top: 3px;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: #f6c000;
+      text-transform: uppercase;
+    }
+    .sub { color: rgba(255,255,255,.62); font-size: 12px; max-width: 340px; text-align: right; }
+
+    /* 保存目录栏(全宽,紧凑一行) */
+    .dirbar {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 18px;
+    }
+    .dirbar .lab {
+      font-size: 11px; letter-spacing: 1px; color: #f6c000;
+      font-weight: 700; flex-shrink: 0; text-transform: uppercase;
+    }
+    .dir-path {
+      flex: 1; font-size: 12px; color: #e8e2d6;
+      background: rgba(0,0,0,.28); border-radius: 7px; padding: 7px 10px;
+      word-break: break-all; min-width: 0;
+    }
+
+    /* 两列网格 */
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .col { min-width: 0; }
+    .coltitle {
+      display: flex; align-items: baseline; gap: 8px;
+      padding: 0 2px 10px;
+    }
+    .coltitle .dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      align-self: center; flex-shrink: 0;
+    }
+    .col.audio .coltitle .dot { background: #ff8c1a; box-shadow: 0 0 0 4px rgba(255,140,26,.18); }
+    .col.image .coltitle .dot { background: #f6c000; box-shadow: 0 0 0 4px rgba(246,192,0,.18); }
+    .coltitle .zh { font-size: 16px; font-weight: 800; color: #fff; }
+    .coltitle .en { font-size: 10px; letter-spacing: 2px; color: rgba(255,255,255,.45); text-transform: uppercase; }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 22px rgba(0,0,0,.34);
+    }
+    .card h3 {
+      margin: 0 0 12px; font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; gap: 7px; color: #1d1d1f;
+    }
+    .card h3::before {
+      content: ""; width: 8px; height: 8px; border-radius: 2px;
+      background: #ff8c1a; flex-shrink: 0;
+    }
+
+    .drop {
+      border: 2px dashed #d8cdb6;
+      border-radius: 11px;
+      padding: 20px 12px;
+      text-align: center;
+      color: #8e8e93;
+      font-size: 13px;
+      transition: all .15s;
+      cursor: pointer;
+      user-select: none;
+    }
+    .drop.over { border-color: #ff8c1a; background: #fff6ea; color: #d9650a; }
+    .drop .file { color: #1d1d1f; font-weight: 600; margin-top: 6px; word-break: break-all; }
+
+    label { display: block; font-size: 12px; color: #6e6e73; margin: 12px 0 4px; }
+    input[type="text"] {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid #d2d2d7;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    input[type="text"]:focus { outline: none; border-color: #ff8c1a; box-shadow: 0 0 0 3px rgba(255,140,26,.15); }
+
+    button {
+      margin-top: 12px;
+      padding: 9px 16px;
+      border: none;
+      border-radius: 9px;
+      background: #ff8c1a;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover:not(:disabled) { background: #f57c00; }
+    button:disabled { background: #e2dccd; color: #fff; cursor: not-allowed; }
+    button.ghost { background: #1d1a16; color: #f6c000; }
+    button.ghost:hover:not(:disabled) { background: #000; }
+    .dirbar button { width: auto; margin-top: 0; padding: 7px 12px; font-size: 12px; border-radius: 8px; }
+
+    /* 链接切片:时间两栏并排 */
+    .row2 { display: flex; gap: 10px; }
+    .row2 > div { flex: 1; min-width: 0; }
+
+    .list { margin-top: 2px; max-height: 240px; overflow: auto; }
+    .row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 0; border-bottom: 1px solid #efe9dd;
+    }
+    .row:last-child { border-bottom: none; }
+    .row img {
+      width: 40px; height: 40px; object-fit: cover;
+      border-radius: 7px; background: #f0f0f2; flex-shrink: 0;
+    }
+    .row .nm { flex: 1; font-size: 13px; word-break: break-all; }
+    .row .del {
+      margin: 0; padding: 4px 10px; font-size: 12px; width: auto;
+      background: #ffe5e5; color: #d70015;
+    }
+    .row .del:hover:not(:disabled) { background: #ffd4d4; }
+    .empty { color: #9b9ba0; font-size: 12px; padding: 8px 0; }
+
+    .reload { margin-top: 6px; }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+      background: #0d0d0d; color: #f6c000; padding: 9px 18px; border-radius: 20px;
+      font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none;
+      border: 1px solid #ff8c1a; z-index: 10;
+    }
+    .toast.show { opacity: .97; }
+
+    /* 窄窗自动堆叠成一列 */
+    @media (max-width: 620px) {
+      .cols { grid-template-columns: 1fr; }
+      .header { flex-direction: column; align-items: flex-start; }
+      .sub { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h2>管理素材<span class="slash"> /</span></h2>
+        <div class="en">David Tao · 黑色柳丁</div>
+      </div>
+      <div class="sub">左列管音频、右列管图片。文件会复制进下面的保存目录,加完点底部「重新加载」即可生效。</div>
+    </div>
+
+    <div class="dirbar">
+      <span class="lab">保存目录</span>
+      <div class="dir-path" id="dirPath">加载中…</div>
+      <button class="ghost" id="openDir">打开</button>
+      <button class="ghost" id="chooseDir">更改…</button>
+    </div>
+
+    <div class="cols">
+      <!-- 音频列 -->
+      <section class="col audio">
+        <div class="coltitle">
+          <span class="dot"></span>
+          <span class="zh">音频</span>
+          <span class="en">Audio</span>
+        </div>
+
+        <div class="card">
+          <h3>添加音频(本地文件)</h3>
+          <div class="drop" id="audioDrop">
+            把音频文件拖到这里(或点击选择)
+            <div class="file" id="audioFile"></div>
+          </div>
+          <input type="file" id="audioInput" accept="audio/*" hidden />
+          <label>这段的台词 / 歌词(会作为气泡文字和文件名)</label>
+          <input type="text" id="caption" placeholder="例如:嘿一起玩吧" />
+          <button id="saveAudio" disabled>保存音频</button>
+        </div>
+
+        <div class="card">
+          <h3>从链接切片(B站等)</h3>
+          <label>视频/音频链接</label>
+          <input type="text" id="clipUrl" placeholder="粘贴 B 站链接" />
+          <div class="row2">
+            <div>
+              <label>起点(mm:ss 或 秒)</label>
+              <input type="text" id="clipStart" placeholder="0:00" />
+            </div>
+            <div>
+              <label>终点(同上)</label>
+              <input type="text" id="clipEnd" placeholder="0:10" />
+            </div>
+          </div>
+          <label>这段的台词 / 歌词(可选,气泡文字和文件名)</label>
+          <input type="text" id="clipCaption" placeholder="例如:嘿一起玩吧" />
+          <button id="saveClip" disabled>下载并切片</button>
+        </div>
+
+        <div class="card">
+          <h3>现有音频</h3>
+          <div class="list" id="audioList"></div>
+        </div>
+      </section>
+
+      <!-- 图片列 -->
+      <section class="col image">
+        <div class="coltitle">
+          <span class="dot"></span>
+          <span class="zh">图片</span>
+          <span class="en">Image</span>
+        </div>
+
+        <div class="card">
+          <h3>添加图片</h3>
+          <div class="drop" id="imageDrop">
+            把图片拖到这里(可多张,或点击选择)
+            <div class="file" id="imageFile"></div>
+          </div>
+          <input type="file" id="imageInput" accept="image/*" multiple hidden />
+          <label>图片名称(可选,仅单张时生效;多张用各自原文件名)</label>
+          <input type="text" id="imageName" placeholder="例如:老大侧脸" />
+          <button id="saveImage" disabled>保存图片</button>
+          <button id="saveCutout" class="ghost" disabled>抠图保存(去背景,仅人物)</button>
+        </div>
+
+        <div class="card">
+          <h3>现有图片</h3>
+          <div class="list" id="imageList"></div>
+        </div>
+      </section>
+    </div>
+
+    <button class="ghost reload" id="reloadPet">重新加载素材(刷新老大)</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="manager.js"></script>
+</body>
+</html>

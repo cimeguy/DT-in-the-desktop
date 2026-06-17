@@ -4,6 +4,15 @@
 
 > 素材（图片/音频）由你自己提供并仅供本地个人使用，本程序不附带任何受版权保护的内容，请勿打包分发带版权素材的版本。
 
+## 启动 / 关闭
+
+```bash
+cd DT-in-the-desktop   # 进入项目目录
+npm start                                      # 启动桌面宠物（等价于 electron .）
+```
+
+关闭：命令行按 `Ctrl+C`，或在宠物上 **右键 → 退出**。
+
 ## 环境要求
 
 - **macOS**（窗口透明置顶等行为针对 macOS 调试；其他系统未测试）
@@ -76,11 +85,51 @@ bash tools/auto_split.sh ~/Downloads/myrecording.m4a -35 0.3
 **3. 添加图片**
 把图片直接放进 `assets/images/`，然后启动宠物后 **右键 → 重新加载素材** 即可生效。
 
+> 也可以在运行中的宠物上 **右键 → 管理素材…**，在弹出的窗口里直接拖入音频（填台词）或图片，也能删除已有素材，无需用终端。文件会复制到你设置的「保存目录」（首次可在该窗口里更改）。
+
 ## 交互说明
 
 - **左键点击**：切换下一张图 + 随机播放一段音频 + 头顶气泡显示台词 + 弹跳动画
 - **按住拖动**：移动宠物位置（位移超过 5px 才算拖拽，不会误触发点击）
-- **右键**：菜单（重新加载素材 / 退出）
+- **右键**：菜单（管理素材… / 重新加载素材 / 退出）
+
+## 抠图工具（人物去背景）
+
+把一张人物照抠成只剩人物的透明 PNG（适合做宠物图）。基于 macOS 自带的 Vision 人物分割，**离线、零第三方依赖**（需要 macOS 13+ 和 Xcode 命令行工具里的 `swiftc`）。
+
+```bash
+# 首次编译（生成可执行文件 tools/cutout_person）
+swiftc tools/cutout_person.swift -o tools/cutout_person
+
+# 使用：输入图 → 输出透明 PNG
+tools/cutout_person 输入图.jpg 输出.png
+```
+
+抠好的 PNG 可直接在「管理素材」窗口里拖进去当宠物图。
+
+## 打包成可安装 App
+
+项目已配置 `electron-builder`，可打出不签名的安装包：
+
+```bash
+npm install            # 确保依赖齐全（含 electron-builder）
+npm run dist:mac       # 仅 macOS：在 release/ 生成 .dmg（arm64 + x64）
+npm run dist:win       # 仅 Windows：生成 .exe 安装包（在 Mac 上需先装 wine）
+npm run dist           # 同时打 Mac + Win
+```
+
+产物在 `release/` 目录。
+
+### 安装说明（发给别人时一并附上）
+
+**macOS：** 安装包未做苹果签名/公证，首次打开会提示「无法验证开发者」。
+正确打开方式：**右键点击 App 图标 → 选「打开」→ 再点「打开」**（不要直接双击）。
+之后就能正常双击使用。若仍被拦，可在「系统设置 → 隐私与安全性」页点「仍要打开」，
+或在终端执行：`xattr -cr "/Applications/DT-in-the-desktop.app"`。
+
+**Windows：** 未签名会弹一次 SmartScreen 蓝色提示，点 **「更多信息」→「仍要运行」** 即可安装，不影响使用。
+
+> 注意：Mac 的 Intel 与 Apple 芯片（M 系列）安装包不通用，发给对方时认准对应架构的 `.dmg`。
 
 ## 依赖一览
 

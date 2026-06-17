@@ -1,3 +1,8 @@
 node_modules/
+release/
+.venv-rembg/
+tools/cutout_person
+cutout_out/
+todo.md
 .DS_Store
 *.log

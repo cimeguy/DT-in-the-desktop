@@ -11,15 +11,23 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-async function loadAssets() {
+async function loadAssets(showUrl) {
   assets = await window.petAPI.getAssets();
   if (assets.images.length > 0) {
     hint.style.display = 'none';
-    imgEl.src = pick(assets.images).url;
+    imgEl.src = showUrl || pick(assets.images).url;
   } else {
     hint.style.display = 'block';
     imgEl.removeAttribute('src');
   }
+}
+
+const BASE_IMG = 240;
+function applyScale(scale) {
+  const s = Number(scale) || 1;
+  const px = Math.round(BASE_IMG * s) + 'px';
+  imgEl.style.maxWidth = px;
+  imgEl.style.maxHeight = px;
 }
 
 function showBubble(text) {
@@ -91,6 +99,17 @@ pet.addEventListener('contextmenu', (e) => {
   window.petAPI.showContextMenu();
 });
 
-window.petAPI.onReloadAssets(() => loadAssets());
+window.petAPI.onReloadAssets((e, showUrl) => loadAssets(showUrl));
+window.petAPI.onSetScale((e, scale) => applyScale(scale));
 
-loadAssets();
+// 按住 Ctrl/⌘ 滚轮缩放
+window.addEventListener('wheel', (e) => {
+  if (!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  window.petAPI.zoomPet(e.deltaY < 0 ? 0.1 : -0.1);
+}, { passive: false });
+
+(async () => {
+  applyScale(await window.petAPI.getScale());
+  loadAssets();
+})();
