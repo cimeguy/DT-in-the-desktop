@@ -102,8 +102,9 @@ function setUserDir(dir) {
 }
 
 // 原始音频下载目录(与素材目录分开,可单独配置)
+// 用 userData 下的可写目录:打包后 .app 包内是只读的,放外面才能下载缓存。
 function defaultDownloadDir() {
-  return path.join(BUNDLED_ASSETS_DIR, 'download_audio');
+  return path.join(app.getPath('userData'), 'download_audio');
 }
 
 function getDownloadDir() {
