@@ -57,4 +57,7 @@ contextBridge.exposeInMainWorld('managerAPI', {
   pathForFile: (file) => webUtils.getPathForFile(file),
   reloadPet: () => ipcRenderer.send('reload-pet'),
   toggleManagerTop: () => ipcRenderer.invoke('toggle-manager-top'),
+  getMuted: () => ipcRenderer.invoke('get-muted'),
+  toggleMute: () => ipcRenderer.invoke('toggle-mute'),
+  onSetMuted: (cb) => ipcRenderer.on('set-muted', cb),
 });

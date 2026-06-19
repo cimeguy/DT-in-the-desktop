@@ -395,6 +395,13 @@
     }
     .batch-toggle:hover:not(:disabled) { background: #e4ddff; }
     .batch-toggle.on { background: #5b3ed6; color: #fff; }
+    .mute-toggle {
+      width: auto; margin: 0; padding: 5px 12px;
+      font-size: 12px; border-radius: 8px;
+      background: #e3f0ff; color: #0066cc;
+    }
+    .mute-toggle:hover:not(:disabled) { background: #d2e6ff; }
+    .mute-toggle.on { background: #ff3b30; color: #fff; }
     /* 全选 / 删除选中 仅在多选模式下显示 */
     .batch-all, .batch-del { display: none; }
     .batchbar.multi .batch-all { display: flex; }
@@ -562,6 +569,7 @@
         <div class="card">
           <h3>现有音频</h3>
           <div class="batchbar" id="audioBatch">
+            <button class="mute-toggle" id="audioMute">🔊 全部静音</button>
             <button class="batch-toggle" id="audioMulti">多选</button>
             <label class="batch-all"><input type="checkbox" id="audioSelAll" /> 全选</label>
             <button class="batch-del" id="audioDelSel" disabled>删除选中</button>
@@ -594,6 +602,7 @@
         <div class="card">
           <h3>现有图片</h3>
           <div class="batchbar" id="imageBatch">
+            <button class="mute-toggle" id="imageMute">🔊 全部静音</button>
             <button class="batch-toggle" id="imageMulti">多选</button>
             <label class="batch-all"><input type="checkbox" id="imageSelAll" /> 全选</label>
             <button class="batch-del" id="imageDelSel" disabled>删除选中</button>

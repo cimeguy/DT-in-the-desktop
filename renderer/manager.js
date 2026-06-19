@@ -715,6 +715,25 @@ audioDelSel.addEventListener('click', () => batchDelete(false));
 imageMulti.addEventListener('click', () => setMultiMode(true, !imageMulti.classList.contains('on')));
 audioMulti.addEventListener('click', () => setMultiMode(false, !audioMulti.classList.contains('on')));
 
+// 全局静音总开关:两栏各放一个,与桌宠右键菜单的静音联动
+const imageMute = document.getElementById('imageMute');
+const audioMute = document.getElementById('audioMute');
+function syncMute(muted) {
+  [imageMute, audioMute].forEach((b) => {
+    b.classList.toggle('on', muted);
+    b.textContent = muted ? '🔇 已静音' : '🔊 全部静音';
+  });
+}
+async function toggleMuteAll() {
+  const muted = await window.managerAPI.toggleMute();
+  syncMute(muted);
+  toast(muted ? '已全部静音' : '已取消静音');
+}
+imageMute.addEventListener('click', toggleMuteAll);
+audioMute.addEventListener('click', toggleMuteAll);
+window.managerAPI.onSetMuted((e, m) => syncMute(!!m));
+window.managerAPI.getMuted().then((m) => syncMute(!!m));
+
 function saveClipMap() {
   for (const k of Object.keys(clipMapDraft)) {
     if (!Array.isArray(clipMapDraft[k]) || !clipMapDraft[k].length) delete clipMapDraft[k];
