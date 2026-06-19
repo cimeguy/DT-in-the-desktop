@@ -152,6 +152,61 @@ pet.addEventListener('mouseenter', () => {
   wobble();
 });
 
+// 鼠标在宠物上快速来回晃 -> 根据频率转圈
+let shakeTimes = [];
+let lastShakeX = null;
+let lastShakeDir = 0;
+let spinning = false;
+const SHAKE_WINDOW = 700;   // 统计最近 700ms 内的换向
+const SHAKE_MIN_DX = 6;     // 小于此位移忽略,避免抖动误判
+const SHAKE_TRIGGER = 4;    // 窗口内换向达到这么多次就转
+
+function resetShake() {
+  shakeTimes = [];
+  lastShakeX = null;
+  lastShakeDir = 0;
+}
+
+function trackShake(e) {
+  if (dragging || radialOpen || spinning) { resetShake(); return; }
+  const x = e.screenX;
+  if (lastShakeX === null) { lastShakeX = x; return; }
+  const dx = x - lastShakeX;
+  if (Math.abs(dx) < SHAKE_MIN_DX) return;
+  const dir = dx > 0 ? 1 : -1;
+  if (lastShakeDir && dir !== lastShakeDir) {
+    const now = performance.now();
+    shakeTimes.push(now);
+    shakeTimes = shakeTimes.filter((t) => now - t <= SHAKE_WINDOW);
+    if (shakeTimes.length >= SHAKE_TRIGGER) {
+      triggerSpin(shakeTimes.length);
+      resetShake();
+    }
+  }
+  lastShakeDir = dir;
+  lastShakeX = x;
+}
+
+function triggerSpin(intensity) {
+  if (spinning) return;
+  spinning = true;
+  // 换向越密 -> 时长越短 -> 转得越快(0.3s ~ 0.95s)
+  const dur = Math.max(0.3, 0.95 - (intensity - SHAKE_TRIGGER) * 0.1);
+  imgEl.classList.remove('wobble');
+  imgEl.style.setProperty('--spin-dur', dur + 's');
+  imgEl.classList.add('spin');
+}
+
+imgEl.addEventListener('animationend', (ev) => {
+  if (ev.animationName === 'petSpin') {
+    imgEl.classList.remove('spin');
+    spinning = false;
+  }
+});
+
+window.addEventListener('mousemove', trackShake);
+pet.addEventListener('mouseleave', resetShake);
+
 window.addEventListener('mousemove', (e) => {
   if (!dragging) return;
   const dx = e.screenX - startX;
@@ -361,7 +416,13 @@ window.addEventListener('keydown', (e) => {
 window.petAPI.onReloadAssets((e, showUrl) => loadAssets(showUrl));
 window.petAPI.onSetScale((e, scale) => applyScale(scale));
 window.petAPI.onClipMap((e, map) => { clipMap = map || {}; });
-window.petAPI.onAudioVolumes((e, v) => { audioVolumes = v || {}; });
+window.petAPI.onAudioVolumes((e, v) => {
+  audioVolumes = v || {};
+  // 若调的正是当前正在播放的这首,音量实时跟着动
+  if (currentAudio && !currentAudio.ended && lastClipName != null) {
+    currentAudio.volume = audioVolumes[lastClipName] != null ? audioVolumes[lastClipName] : 1;
+  }
+});
 window.petAPI.onHiddenImages((e, h) => { hiddenImages = new Set(h || []); });
 window.petAPI.onSetPlayMode((e, m) => { if (m) { playMode = m; imgIndex = -1; } });
 window.petAPI.onSetMuted((e, m) => {

@@ -563,6 +563,21 @@ ipcMain.on('set-window-pos', (e, x, y) => {
 ipcMain.handle('get-user-dir', () => getUserDir());
 ipcMain.handle('get-download-dir', () => getDownloadDir());
 
+// 选本地音频/视频文件:默认从下载目录打开
+ipcMain.handle('pick-local-audio', async () => {
+  const r = await dialog.showOpenDialog(managerWin || win, {
+    title: '选择本地音频/视频文件',
+    properties: ['openFile'],
+    defaultPath: getDownloadDir(),
+    filters: [
+      { name: '音频/视频', extensions: ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'opus', 'webm', 'flac', 'mp4', 'mov', 'mkv', 'avi'] },
+      { name: '全部文件', extensions: ['*'] },
+    ],
+  });
+  if (r.canceled || !r.filePaths[0]) return null;
+  return r.filePaths[0];
+});
+
 ipcMain.handle('choose-download-dir', async () => {
   const r = await dialog.showOpenDialog(managerWin || win, {
     title: '选择原始音频下载目录',

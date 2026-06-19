@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('managerAPI', {
   chooseDownloadDir: () => ipcRenderer.invoke('choose-download-dir'),
   resetDownloadDir: () => ipcRenderer.invoke('reset-download-dir'),
   openDownloadDir: () => ipcRenderer.send('open-download-dir'),
+  pickLocalAudio: () => ipcRenderer.invoke('pick-local-audio'),
   listAssets: () => ipcRenderer.invoke('get-assets'),
   getClipMap: () => ipcRenderer.invoke('get-clip-map'),
   setClipMap: (map) => ipcRenderer.invoke('set-clip-map', map),

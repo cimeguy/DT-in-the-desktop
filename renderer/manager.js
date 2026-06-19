@@ -73,13 +73,45 @@ function maskUser(p) {
   );
 }
 
-async function refreshDir() {
-  dirPathEl.textContent = maskUser(await window.managerAPI.getUserDir());
-  downloadPathEl.textContent = maskUser(await window.managerAPI.getDownloadDir());
+// 路径默认隐藏(只存已打码用户名的真实串),点小眼睛才显示
+const dirShown = { user: false, download: false };
+const dirReal = { user: '', download: '' };
+
+function renderDirPath(key) {
+  const el = key === 'user' ? dirPathEl : downloadPathEl;
+  if (dirShown[key]) {
+    el.textContent = dirReal[key] || '—';
+    el.classList.remove('masked');
+  } else {
+    el.textContent = '••••••••••••••••';
+    el.classList.add('masked');
+  }
 }
 
+function setDirPath(key, value) {
+  dirReal[key] = maskUser(value);
+  renderDirPath(key);
+}
+
+async function refreshDir() {
+  setDirPath('user', await window.managerAPI.getUserDir());
+  setDirPath('download', await window.managerAPI.getDownloadDir());
+}
+
+document.getElementById('eyeDir').addEventListener('click', (e) => {
+  dirShown.user = !dirShown.user;
+  e.currentTarget.classList.toggle('on', dirShown.user);
+  renderDirPath('user');
+});
+
+document.getElementById('eyeDownloadDir').addEventListener('click', (e) => {
+  dirShown.download = !dirShown.download;
+  e.currentTarget.classList.toggle('on', dirShown.download);
+  renderDirPath('download');
+});
+
 document.getElementById('chooseDir').addEventListener('click', async () => {
-  dirPathEl.textContent = maskUser(await window.managerAPI.chooseUserDir());
+  setDirPath('user', await window.managerAPI.chooseUserDir());
   renderLists();
 });
 
@@ -88,13 +120,13 @@ document.getElementById('openDir').addEventListener('click', () => {
 });
 
 document.getElementById('resetDir').addEventListener('click', async () => {
-  dirPathEl.textContent = maskUser(await window.managerAPI.resetUserDir());
+  setDirPath('user', await window.managerAPI.resetUserDir());
   toast('素材目录已恢复默认');
   renderLists();
 });
 
 document.getElementById('chooseDownloadDir').addEventListener('click', async () => {
-  downloadPathEl.textContent = maskUser(await window.managerAPI.chooseDownloadDir());
+  setDirPath('download', await window.managerAPI.chooseDownloadDir());
 });
 
 document.getElementById('openDownloadDir').addEventListener('click', () => {
@@ -102,7 +134,7 @@ document.getElementById('openDownloadDir').addEventListener('click', () => {
 });
 
 document.getElementById('resetDownloadDir').addEventListener('click', async () => {
-  downloadPathEl.textContent = maskUser(await window.managerAPI.resetDownloadDir());
+  setDirPath('download', await window.managerAPI.resetDownloadDir());
   toast('下载目录已恢复默认');
 });
 
@@ -116,7 +148,7 @@ document.getElementById('pinTop').addEventListener('click', async (e) => {
 });
 
 // 通用拖拽区绑定
-function bindDrop(dropEl, inputEl, fileLabel, onPick) {
+function bindDrop(dropEl, inputEl, fileLabel, onPick, onClickOverride) {
   const stop = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -137,7 +169,10 @@ function bindDrop(dropEl, inputEl, fileLabel, onPick) {
     const files = Array.from(e.dataTransfer.files);
     if (files.length) onPick(files);
   });
-  dropEl.addEventListener('click', () => inputEl.click());
+  dropEl.addEventListener('click', () => {
+    if (onClickOverride) onClickOverride();
+    else inputEl.click();
+  });
   inputEl.addEventListener('change', () => {
     const files = Array.from(inputEl.files);
     if (files.length) onPick(files);
@@ -210,6 +245,15 @@ bindDrop(
     localClipPath = window.managerAPI.pathForFile(file);
     localClipExt = extOf(file.name, '.mp3');
     document.getElementById('localClipFile').textContent = file.name;
+    updateLocalClipBtn();
+  },
+  // 点击拖拽区时用原生选择框,默认从下载目录打开
+  async () => {
+    const p = await window.managerAPI.pickLocalAudio();
+    if (!p) return;
+    localClipPath = p;
+    localClipExt = extOf(p, '.mp3');
+    document.getElementById('localClipFile').textContent = p.split(/[\\/]/).pop();
     updateLocalClipBtn();
   }
 );

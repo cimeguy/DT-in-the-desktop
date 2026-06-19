@@ -85,6 +85,9 @@
       background: rgba(0,0,0,.28); border-radius: 7px; padding: 7px 10px;
       word-break: break-all; min-width: 0;
     }
+    .dir-path.masked { letter-spacing: 2px; color: #9a948a; }
+    .dirbar .eye { padding: 7px 9px; opacity: .8; }
+    .dirbar .eye.on { opacity: 1; background: rgba(246,192,0,.18); }
 
     /* 两列网格 */
     .cols {
@@ -526,6 +529,7 @@
     <div class="dirbar">
       <span class="lab">素材目录</span>
       <div class="dir-path" id="dirPath">加载中…</div>
+      <button class="ghost eye" id="eyeDir" title="显示/隐藏路径">👁</button>
       <button class="ghost" id="openDir">打开</button>
       <button class="ghost" id="chooseDir">更改…</button>
       <button class="ghost" id="resetDir">默认</button>
@@ -534,6 +538,7 @@
     <div class="dirbar">
       <span class="lab">下载目录</span>
       <div class="dir-path" id="downloadPath">加载中…</div>
+      <button class="ghost eye" id="eyeDownloadDir" title="显示/隐藏路径">👁</button>
       <button class="ghost" id="openDownloadDir">打开</button>
       <button class="ghost" id="chooseDownloadDir">更改…</button>
       <button class="ghost" id="resetDownloadDir">默认</button>
