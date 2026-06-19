@@ -27,11 +27,23 @@
         #0c0b0a;
     }
 
-    .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 22px; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 40px 20px 22px; }
+
+    /* 顶部标题栏:左侧空白区可拖拽,右侧放置顶按钮(按钮独立于拖拽区,确保点击可靠) */
+    .titlebar {
+      position: fixed; top: 0; left: 0; right: 0; height: 40px;
+      z-index: 100;
+      display: flex; align-items: center;
+      padding: 0 12px; gap: 8px;
+    }
+    .titlebar .drag-spacer {
+      flex: 1; align-self: stretch;
+      -webkit-app-region: drag;
+    }
 
     /* 顶部品牌头 */
     .header {
-      padding: 22px 4px 14px;
+      padding: 8px 4px 14px;
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
@@ -149,6 +161,15 @@
     }
     button:hover:not(:disabled) { background: #f57c00; }
     button:disabled { background: #e2dccd; color: #fff; cursor: not-allowed; }
+    /* 处理中:独立配色(蓝)+脉冲,区别于禁用灰 */
+    button.processing, button.processing:disabled {
+      background: #0a84ff; color: #fff; cursor: progress;
+      animation: btnPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes btnPulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: .68; }
+    }
     button.ghost { background: #1d1a16; color: #f6c000; }
     button.ghost:hover:not(:disabled) { background: #000; }
     .dirbar button { width: auto; margin-top: 0; padding: 7px 12px; font-size: 12px; border-radius: 8px; }
@@ -158,22 +179,155 @@
     .row2 > div { flex: 1; min-width: 0; }
 
     .list { margin-top: 2px; max-height: 240px; overflow: auto; }
+    /* 图片列表更高,方便逐张配音 */
+    #imageList { max-height: 460px; }
     .row {
       display: flex; align-items: center; gap: 10px;
       padding: 7px 0; border-bottom: 1px solid #efe9dd;
     }
     .row:last-child { border-bottom: none; }
+    /* 图片行:第一行缩略图+名字,第二行各按钮 */
+    .row.img-row { flex-direction: column; align-items: stretch; gap: 8px; }
+    .row.img-row .row-head { display: flex; align-items: center; gap: 10px; }
+    .row.img-row .row-head .vis { flex: 0 0 auto; margin-left: auto; }
+    .row.img-row .row-ctrls {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .row.img-row .row-ctrls > button { flex: 1; justify-content: center; text-align: center; }
     .row img {
       width: 40px; height: 40px; object-fit: cover;
       border-radius: 7px; background: #f0f0f2; flex-shrink: 0;
     }
-    .row .nm { flex: 1; font-size: 13px; word-break: break-all; }
+    .row .nm {
+      flex: 1; min-width: 0; font-size: 13px;
+      display: flex; align-items: center; gap: 6px; cursor: text;
+    }
+    .row .nm .nm-text {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .row .nm .nm-pen { flex: 0 0 auto; color: #b0b0b6; font-size: 12px; }
+    .row .nm:hover .nm-pen { color: #ff8c1a; }
+    .row .nm-edit {
+      flex: 1; width: 100%; margin: 0; padding: 3px 7px; font-size: 13px;
+      border: 1px solid #ff8c1a; border-radius: 6px; outline: none;
+      box-sizing: border-box;
+    }
     .row .del {
       margin: 0; padding: 4px 10px; font-size: 12px; width: auto;
       background: #ffe5e5; color: #d70015;
     }
     .row .del:hover:not(:disabled) { background: #ffd4d4; }
+    .row .play {
+      margin: 0; padding: 4px 10px; font-size: 12px; width: auto;
+      background: #e3f0ff; color: #0066cc;
+    }
+    .row .play:hover:not(:disabled) { background: #d2e6ff; }
+    .row .vis {
+      margin: 0; padding: 4px 10px; font-size: 12px; width: auto; flex: 0 0 auto;
+      background: #e8f7ec; color: #1a7f37; white-space: nowrap;
+    }
+    .row .vis:hover:not(:disabled) { background: #d6f0dd; }
+    .row .vis.off { background: #efeef1; color: #8a8a90; }
+    .row .vis.off:hover:not(:disabled) { background: #e4e3e8; }
+    .row.img-hidden img { opacity: .35; filter: grayscale(1); }
+    .row.img-hidden .nm { color: #a8a8ae; text-decoration: line-through; }
+    .row .vol { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+    .row .vol input[type=range] { width: 78px; accent-color: #ff8c1a; cursor: pointer; }
+    .row .vol .vol-pct { font-size: 11px; color: #8a8a90; width: 32px; text-align: right; }
+    .ghost.active { background: #fff3cd; color: #8a6d00; border-color: #f0d98a; }
+    .pin-fixed {
+      -webkit-app-region: no-drag;
+      width: auto; margin: 0; padding: 4px 12px; font-size: 12px;
+      border-radius: 8px; cursor: pointer;
+      background: rgba(255,255,255,.12); color: #fff;
+      border: 1px solid rgba(255,255,255,.25);
+    }
+    .pin-fixed:hover { background: rgba(255,255,255,.2); }
+    .pin-fixed.active {
+      background: #ffcf33; color: #3a2e00; border-color: #ffcf33;
+      font-weight: 700;
+      box-shadow: 0 0 0 2px rgba(255,207,51,.35), 0 0 12px rgba(255,207,51,.55);
+      animation: pinGlow 1.6s ease-in-out infinite;
+    }
+    @keyframes pinGlow {
+      0%, 100% { box-shadow: 0 0 0 2px rgba(255,207,51,.35), 0 0 10px rgba(255,207,51,.45); }
+      50%      { box-shadow: 0 0 0 2px rgba(255,207,51,.55), 0 0 16px rgba(255,207,51,.85); }
+    }
+    /* 跟随鼠标的小气泡提示 */
+    .tip {
+      position: fixed; z-index: 200; pointer-events: none;
+      display: none; max-width: 260px;
+      padding: 7px 10px; border-radius: 8px;
+      background: rgba(20,18,16,.96); color: #fff;
+      font-size: 12px; line-height: 1.5; white-space: pre-line;
+      box-shadow: 0 6px 20px rgba(0,0,0,.4);
+      border: 1px solid rgba(255,255,255,.12);
+    }
     .empty { color: #9b9ba0; font-size: 12px; padding: 8px 0; }
+
+    /* 图片行内联配音 */
+    @property --spin {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+    .row .assign {
+      margin: 0; padding: 4px 10px; font-size: 12px; width: auto;
+      background: #fff1df; color: #b86a05; font-weight: 700;
+      border: 1px solid #f3d9b3;
+    }
+    .row .assign.none {
+      background: #f4f4f6; color: #a0a0a6; font-weight: 500;
+      border-color: #e6e6ea;
+    }
+    .row .assign:hover:not(:disabled) { background: #ffe6c7; border-color: #ff8c1a; }
+
+    /* 专属台词面板:深色"调音台",衬托转圈彩边 */
+    .audio-chips {
+      display: none; flex-wrap: wrap; gap: 8px;
+      margin: 12px 0 15px 48px;
+      padding: 14px 14px 13px;
+      background: radial-gradient(120% 140% at 0% 0%, #211a12 0%, #131009 70%);
+      border: 1px solid #382d20;
+      border-radius: 12px;
+      position: relative;
+      box-shadow: 0 10px 28px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .audio-chips.show { display: flex; }
+    .audio-chips::before {
+      content: "🎵 这张图专属台词";
+      position: absolute; top: -10px; left: 14px;
+      padding: 2px 10px; font-size: 11px; font-weight: 700;
+      letter-spacing: .3px;
+      color: #ffcf33; background: #1a150e;
+      border: 1px solid #4a3b25; border-radius: 999px;
+    }
+    .audio-chips label {
+      display: inline-flex; align-items: center; gap: 6px; margin: 0;
+      padding: 6px 12px; border-radius: 999px;
+      font-size: 12px; color: #cdbfa6; cursor: pointer; user-select: none;
+      background: #221c14; border: 1px solid #3a2f21;
+      transition: color .15s, transform .12s;
+    }
+    .audio-chips label:hover { color: #fff; border-color: #6a5333; transform: translateY(-1px); }
+    /* 选中:深底 + 转圈彩色描边 + 柔光 */
+    .audio-chips label.on {
+      color: #fff; font-weight: 600;
+      border: 2px solid transparent;
+      background:
+        linear-gradient(#1c160f, #1c160f) padding-box,
+        conic-gradient(from var(--spin),
+          #ff8c1a, #f6c000, #ff8c1a) border-box;
+      animation: spinBorder 3s linear infinite;
+      box-shadow: 0 0 16px rgba(255,140,26,.38);
+    }
+    @keyframes spinBorder { to { --spin: 360deg; } }
+    .audio-chips input {
+      margin: 0; width: 13px; height: 13px;
+      accent-color: #ff8c1a;
+    }
+    .audio-chips label.on input { accent-color: #ffcf33; }
+    .chips-empty { color: #8c7c62; font-size: 12px; padding: 4px 0; }
 
     .reload { margin-top: 6px; }
 
@@ -185,6 +339,161 @@
     }
     .toast.show { opacity: .97; }
 
+    /* 切片预览确认弹窗 */
+    .modal-mask {
+      display: none;
+      position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,.55);
+      align-items: center; justify-content: center;
+    }
+    .modal-mask.show { display: flex; }
+    .modal {
+      background: #fff; color: #1d1d1f;
+      width: min(420px, 88vw);
+      border-radius: 14px; padding: 20px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.5);
+    }
+    .modal h3 {
+      margin: 0 0 10px; font-size: 15px; font-weight: 700;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .modal h3::before {
+      content: ""; width: 8px; height: 8px; border-radius: 2px;
+      background: #ff8c1a; flex-shrink: 0;
+    }
+    .preview-name {
+      font-size: 13px; color: #6e6e73; word-break: break-all;
+      margin-bottom: 14px; line-height: 1.5;
+    }
+    .modal audio { display: none; }
+    .modal-btns { display: flex; gap: 10px; margin-top: 18px; }
+    .modal-btns button { margin-top: 0; }
+    .modal-btns #previewCancel {
+      flex: 1; padding: 9px 18px;
+      background: #f2f2f5; color: #6e6e73;
+      border: 1px solid #e0ddE6;
+    }
+    .modal-btns #previewCancel:hover:not(:disabled) { background: #e9e9ee; color: #1d1d1f; }
+    .modal-btns #previewConfirm { flex: 1; }
+    .modal-btns #confirmCancel {
+      flex: 1; padding: 9px 18px;
+      background: #f2f2f5; color: #6e6e73; border: 1px solid #e0ddE6;
+    }
+    .modal-btns #confirmCancel:hover:not(:disabled) { background: #e9e9ee; color: #1d1d1f; }
+    .modal-btns #confirmOk { flex: 1; background: #ff3b30; }
+    .modal-btns #confirmOk:hover:not(:disabled) { background: #e0322a; }
+
+    /* 批量操作栏 */
+    .batchbar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 10px;
+    }
+    .batch-toggle {
+      width: auto; margin: 0; padding: 5px 12px;
+      font-size: 12px; border-radius: 8px;
+      background: #f0ecff; color: #5b3ed6;
+    }
+    .batch-toggle:hover:not(:disabled) { background: #e4ddff; }
+    .batch-toggle.on { background: #5b3ed6; color: #fff; }
+    /* 全选 / 删除选中 仅在多选模式下显示 */
+    .batch-all, .batch-del { display: none; }
+    .batchbar.multi .batch-all { display: flex; }
+    .batchbar.multi .batch-del { display: inline-block; }
+    .batch-all {
+      align-items: center; gap: 6px;
+      font-size: 13px; color: #6e6e73; cursor: pointer; user-select: none;
+    }
+    .batch-all input { accent-color: #ff8c1a; cursor: pointer; }
+    .batch-del {
+      width: auto; margin: 0 0 0 auto; padding: 5px 12px;
+      font-size: 12px; border-radius: 8px;
+      background: #ffe5e5; color: #d70015;
+    }
+    .batch-del:hover:not(:disabled) { background: #ffd4d4; }
+    .batch-del:disabled { background: #f1eeee; color: #bbb; }
+    /* 复选框默认隐藏,进入多选模式后才出现 */
+    .row .pickbox { display: none; }
+    .list.multi .row .pickbox {
+      display: inline-block; flex: 0 0 auto;
+      accent-color: #ff8c1a; cursor: pointer; width: 16px; height: 16px;
+    }
+    .row.checked { background: #fff3e6; }
+
+    /* 交互式时间轴 */
+    .timeline { margin: 4px 0 14px; }
+    .tl-hint { font-size: 12px; color: #8e8e93; text-align: center; margin-bottom: 6px; }
+    .tl-track {
+      position: relative; height: 38px; margin-top: 20px; border-radius: 8px;
+      background: #eceaf0; cursor: pointer;
+      box-shadow: inset 0 0 0 1px #e0ddE6;
+    }
+    .tl-selection {
+      position: absolute; top: 0; bottom: 0; left: 0; width: 0;
+      background: linear-gradient(180deg, rgba(255,140,26,.32), rgba(255,140,26,.18));
+      border-left: 2px solid #ff8c1a; border-right: 2px solid #ff8c1a;
+    }
+    .tl-handle {
+      position: absolute; top: 0; bottom: 0; width: 14px; margin-left: -7px;
+      cursor: ew-resize; z-index: 3; display: flex; align-items: center; justify-content: center;
+    }
+    .tl-handle::after {
+      content: attr(data-lb);
+      position: absolute; top: -17px; left: 50%; transform: translateX(-50%);
+      font-size: 10px; font-weight: 700; color: #ff8c1a; white-space: nowrap;
+      pointer-events: none;
+    }
+    .tl-handle span {
+      width: 6px; height: 22px; border-radius: 3px; background: #ff8c1a;
+      box-shadow: 0 1px 3px rgba(0,0,0,.35);
+    }
+    .tl-handle:hover span { background: #ff7300; }
+    .tl-handle.hint-pulse span { animation: handlePulse 1s ease-in-out 3; }
+    @keyframes handlePulse {
+      0%, 100% { box-shadow: 0 1px 3px rgba(0,0,0,.35); transform: scaleY(1); }
+      50% { box-shadow: 0 0 0 5px rgba(255,140,26,.35), 0 1px 3px rgba(0,0,0,.35); transform: scaleY(1.12); }
+    }
+    .tl-playhead {
+      position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px;
+      background: #1d1d1f; z-index: 2; pointer-events: none; left: 0;
+    }
+    .tl-times {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: #8e8e93; margin-top: 5px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* 起止时间精调 */
+    .seg-edit { display: flex; flex-direction: column; gap: 8px; }
+    .seg-row { display: flex; align-items: center; gap: 7px; }
+    .seg-row label { font-size: 13px; color: #1d1d1f; width: 30px; flex: 0 0 auto; }
+    .seg-row input {
+      width: 96px; margin: 0; padding: 5px 8px; font-size: 13px;
+      text-align: center; font-variant-numeric: tabular-nums;
+      border: 1px solid #d8d4dc; border-radius: 7px;
+    }
+    .seg-row .nudge {
+      width: 26px; height: 26px; margin: 0; padding: 0; flex: 0 0 auto;
+      font-size: 16px; line-height: 1; border-radius: 7px;
+      background: #f2f2f5; color: #3a3a3f;
+    }
+    .seg-row .nudge:hover:not(:disabled) { background: #e6e6ea; }
+    .seg-row .pick {
+      margin: 0 0 0 auto; padding: 5px 10px; flex: 0 0 auto;
+      width: auto; font-size: 12px; font-weight: 600; border-radius: 7px;
+      background: #fff2e3; color: #d9650a; border: 1px solid #ffd9b0;
+      white-space: nowrap;
+    }
+    .seg-row .pick:hover:not(:disabled) { background: #ffe6c7; border-color: #ff8c1a; }
+    .seg-dur-row { display: flex; }
+    .seg-dur { margin-left: auto; font-size: 12px; color: #6e6e73; font-variant-numeric: tabular-nums; }
+    .seg-dur b { color: #ff8c1a; }
+
+    .play-row { display: flex; gap: 10px; margin-top: 14px; }
+    .play-row button { margin-top: 0; flex: 1; background: #e3f0ff; color: #0066cc; }
+    .play-row button.playing { background: #0066cc; color: #fff; }
+    .play-row button:hover:not(:disabled) { background: #d2e6ff; }
+    .play-row button.playing:hover { background: #0058b0; }
+
     /* 窄窗自动堆叠成一列 */
     @media (max-width: 620px) {
       .cols { grid-template-columns: 1fr; }
@@ -194,20 +503,33 @@
   </style>
 </head>
 <body>
+  <div class="titlebar">
+    <div class="drag-spacer"></div>
+    <button id="pinTop" class="pin-fixed">📌 置顶</button>
+  </div>
+  <div id="tip" class="tip"></div>
   <div class="wrap">
     <div class="header">
       <div>
         <h2>管理素材<span class="slash"> /</span></h2>
-        <div class="en">David Tao · 黑色柳丁</div>
       </div>
-      <div class="sub">左列管音频、右列管图片。文件会复制进下面的保存目录,加完点底部「重新加载」即可生效。</div>
+      <div class="sub">左列管音频、右列管图片。文件会复制进下面的保存目录,增删后桌宠会自动刷新生效。</div>
     </div>
 
     <div class="dirbar">
-      <span class="lab">保存目录</span>
+      <span class="lab">素材目录</span>
       <div class="dir-path" id="dirPath">加载中…</div>
       <button class="ghost" id="openDir">打开</button>
       <button class="ghost" id="chooseDir">更改…</button>
+      <button class="ghost" id="resetDir">默认</button>
+    </div>
+
+    <div class="dirbar">
+      <span class="lab">下载目录</span>
+      <div class="dir-path" id="downloadPath">加载中…</div>
+      <button class="ghost" id="openDownloadDir">打开</button>
+      <button class="ghost" id="chooseDownloadDir">更改…</button>
+      <button class="ghost" id="resetDownloadDir">默认</button>
     </div>
 
     <div class="cols">
@@ -220,38 +542,30 @@
         </div>
 
         <div class="card">
-          <h3>添加音频(本地文件)</h3>
-          <div class="drop" id="audioDrop">
-            把音频文件拖到这里(或点击选择)
-            <div class="file" id="audioFile"></div>
+          <h3>拖拽 / 选择本地音频 → 选段</h3>
+          <div class="drop" id="localClipDrop">
+            把音频拖到这里(或点击选择)
+            <div class="file" id="localClipFile"></div>
           </div>
-          <input type="file" id="audioInput" accept="audio/*" hidden />
-          <label>这段的台词 / 歌词(会作为气泡文字和文件名)</label>
-          <input type="text" id="caption" placeholder="例如:嘿一起玩吧" />
-          <button id="saveAudio" disabled>保存音频</button>
+          <input type="file" id="localClipInput" accept="audio/*" hidden />
+          <button id="saveLocalClip" disabled>载入并选段</button>
         </div>
 
         <div class="card">
-          <h3>从链接切片(B站等)</h3>
+          <h3>从链接切片(B站等)→ 选段</h3>
           <label>视频/音频链接</label>
           <input type="text" id="clipUrl" placeholder="粘贴 B 站链接" />
-          <div class="row2">
-            <div>
-              <label>起点(mm:ss 或 秒)</label>
-              <input type="text" id="clipStart" placeholder="0:00" />
-            </div>
-            <div>
-              <label>终点(同上)</label>
-              <input type="text" id="clipEnd" placeholder="0:10" />
-            </div>
-          </div>
-          <label>这段的台词 / 歌词(可选,气泡文字和文件名)</label>
-          <input type="text" id="clipCaption" placeholder="例如:嘿一起玩吧" />
-          <button id="saveClip" disabled>下载并切片</button>
+          <button id="saveClip" disabled>下载并选段</button>
+          <button id="cancelClip" class="ghost" style="display:none;">■ 停止处理</button>
         </div>
 
         <div class="card">
           <h3>现有音频</h3>
+          <div class="batchbar" id="audioBatch">
+            <button class="batch-toggle" id="audioMulti">多选</button>
+            <label class="batch-all"><input type="checkbox" id="audioSelAll" /> 全选</label>
+            <button class="batch-del" id="audioDelSel" disabled>删除选中</button>
+          </div>
           <div class="list" id="audioList"></div>
         </div>
       </section>
@@ -279,15 +593,81 @@
 
         <div class="card">
           <h3>现有图片</h3>
+          <div class="batchbar" id="imageBatch">
+            <button class="batch-toggle" id="imageMulti">多选</button>
+            <label class="batch-all"><input type="checkbox" id="imageSelAll" /> 全选</label>
+            <button class="batch-del" id="imageDelSel" disabled>删除选中</button>
+          </div>
           <div class="list" id="imageList"></div>
         </div>
       </section>
     </div>
-
-    <button class="ghost reload" id="reloadPet">重新加载素材(刷新老大)</button>
   </div>
 
   <div class="toast" id="toast"></div>
-  <script src="manager.js"></script>
-</body>
+
+  <!-- 通用确认弹窗 -->
+  <div class="modal-mask" id="confirmMask">
+    <div class="modal">
+      <h3 id="confirmTitle">确认删除</h3>
+      <div class="preview-name" id="confirmMsg"></div>
+      <div class="modal-btns">
+        <button id="confirmCancel">取消</button>
+        <button id="confirmOk">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 切片预览确认弹窗 -->
+  <div class="modal-mask" id="previewMask">
+    <div class="modal">
+      <h3>选取片段</h3>
+      <div class="preview-name" id="previewName"></div>
+
+      <div class="timeline">
+        <div class="tl-hint">↔ 拖动两端的橙色手柄圈选片段;点轨道任意处可跳转试听</div>
+        <div class="tl-track" id="tlTrack">
+          <div class="tl-selection" id="tlSelection"></div>
+          <div class="tl-handle hint-pulse" id="tlStart" data-lb="◄ 起"><span></span></div>
+          <div class="tl-handle hint-pulse" id="tlEnd" data-lb="止 ►"><span></span></div>
+          <div class="tl-playhead" id="tlPlayhead"></div>
+        </div>
+        <div class="tl-times"><span id="tlT0">00:00</span><span id="tlT1">00:00</span></div>
+      </div>
+
+      <div class="seg-edit">
+        <div class="seg-row">
+          <label>起点</label>
+          <button class="nudge" data-edge="start" data-step="-0.05">−</button>
+          <input type="text" id="segStartIn" inputmode="decimal" />
+          <button class="nudge" data-edge="start" data-step="0.05">+</button>
+          <button class="pick" data-edge="start">⮌ 选取此处</button>
+        </div>
+        <div class="seg-row">
+          <label>止点</label>
+          <button class="nudge" data-edge="end" data-step="-0.05">−</button>
+          <input type="text" id="segEndIn" inputmode="decimal" />
+          <button class="nudge" data-edge="end" data-step="0.05">+</button>
+          <button class="pick" data-edge="end">⮌ 选取此处</button>
+        </div>
+        <div class="seg-dur-row"><span class="seg-dur">选段 <b id="segDur">0.00s</b></span></div>
+      </div>
+
+      <div class="play-row">
+        <button class="ghost" id="playSeg">▶ 试听选段</button>
+        <button class="ghost" id="playFull">▶ 播放全曲</button>
+      </div>
+      <audio id="previewAudio"></audio>
+
+      <label for="previewCaption" style="margin-top:14px;">台词 / 歌词(可选,作为气泡文字和文件名)</label>
+      <input type="text" id="previewCaption" placeholder="例如:嘿一起玩吧" />
+
+      <div class="modal-btns">
+        <button id="previewCancel">丢弃</button>
+        <button id="previewConfirm">放入素材</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="manager.js"></script></body>
 </html>

@@ -1,7 +1,7 @@
 {
   "name": "DT-in-the-desktop",
   "version": "1.0.0",
-  "description": "David Tao 主题桌面宠物:点击换图并随机播放一段音频",
+  "description": "桌面宠物:点击换图并随机播放一段音频",
   "author": "cimeguy",
   "main": "main.js",
   "scripts": {
@@ -16,7 +16,7 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.davidtao.desktop",
+    "appId": "com.dt.desktop",
     "productName": "DT-in-the-desktop",
     "asar": false,
     "files": [
