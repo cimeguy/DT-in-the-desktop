@@ -17,10 +17,9 @@ npm start                                      # 启动桌面宠物（等价于 
 
 - **macOS**（窗口透明置顶等行为针对 macOS 调试；其他系统未测试）
 - **Node.js** 18 或更高版本（含 `npm`）
-- **ffmpeg**：音频切片 / 转码必需
-- **下载工具(用「在线链接」作为音频来源时才需要,用本地文件可不装)**:
-  - **you-get**:B 站链接下载(B 站对 yt-dlp 有风控,程序对 B 站直接走 you-get)。**目前只测过 B 站链接。**
-  - **yt-dlp**:YouTube 等非 B 站链接的兜底下载工具,带进度百分比。⚠️ **非 B 站链接目前尚未实测**,能否成功视站点而定,不装也不影响 B 站与本地文件。
+- **ffmpeg**：音频切片 / 转码必需（用本地文件添加素材，装这一个就够了）
+- **you-get**（可选）：仅在用「在线链接」作为音频来源时才需要。B 站链接走 you-get（已实测）。
+- **yt-dlp**（基本不用，可不装）：只是 YouTube 等非 B 站链接的兜底，**尚未实测**；B 站和本地文件都不需要它。
 - **抠图工具（可选，仅「人物去背景」功能需要）**：macOS 13+ 与 Xcode 命令行工具里的 `swiftc`（详见下方「抠图工具」）
 
 ### 一次性安装（全新 Mac 从零开始）
@@ -29,19 +28,21 @@ npm start                                      # 启动桌面宠物（等价于 
 # 1) 如未安装 Homebrew，先装它（macOS 包管理器）
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# 2) 安装 Node.js 和 ffmpeg
+# 2) 安装 Node.js 和 ffmpeg（核心依赖，本地添加素材只需这些）
 brew install node ffmpeg
 
-# 3) 安装下载工具
+# 3) 下载工具（可选，仅「在线链接」来源才需要）
 brew install you-get    # B 站链接(已实测)
-brew install yt-dlp     # YouTube 等非 B 站链接(兜底,尚未实测,可不装)
-#   —— yt-dlp 也可下载官方独立二进制（更快、无额外依赖）：
+# yt-dlp 基本用不上(YouTube 等兜底,尚未实测)，需要时再装：
+#   brew install yt-dlp
+#   或下载官方独立二进制（更快、无额外依赖）：
 #   curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o /opt/homebrew/bin/yt-dlp && chmod +x /opt/homebrew/bin/yt-dlp
 ```
 
 验证依赖是否就绪：
 ```bash
-node -v && ffmpeg -version | head -1 && you-get --version && yt-dlp --version
+node -v && ffmpeg -version | head -1     # 核心依赖
+# you-get --version                      # 用在线链接时才需要
 ```
 
 ## 快速开始（三步）
