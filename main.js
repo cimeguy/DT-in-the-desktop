@@ -7,6 +7,9 @@ const { execFile, spawn } = require('child_process');
 const BUNDLED_ASSETS_DIR = path.join(app.getAppPath(), 'assets');
 const BUNDLED_IMAGE_DIR = path.join(BUNDLED_ASSETS_DIR, 'images');
 const BUNDLED_AUDIO_DIR = path.join(BUNDLED_ASSETS_DIR, 'audio');
+// 随仓库走的映射快照(图片配音 / 音量 / 隐藏图)。克隆/安装后首次运行会把它播种进
+// userData 的 config.json;开发时(未打包)又会把最新映射回写到这里以便提交。
+const BUNDLED_BINDINGS_PATH = path.join(BUNDLED_ASSETS_DIR, 'asset-bindings.json');
 
 const IMAGE_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
 const AUDIO_EXT = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.opus', '.webm', '.flac'];
@@ -43,6 +46,47 @@ function loadConfig() {
 
 function saveConfig(cfg) {
   fs.writeFileSync(configPath(), JSON.stringify(cfg, null, 2));
+}
+
+// ---------- 映射随仓库:asset-bindings.json ----------
+function loadBundledBindings() {
+  try {
+    const b = JSON.parse(fs.readFileSync(BUNDLED_BINDINGS_PATH, 'utf8'));
+    return (b && typeof b === 'object') ? b : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// 首次运行(userData 还没有任何映射)时,用仓库里的快照播种,这样克隆/安装的
+// 机器也能拿到图片配音、音量、隐藏图。已有映射则不覆盖。
+function maybeSeedBindings() {
+  const cfg = loadConfig();
+  const hasAny = cfg.imageAudioMap || cfg.audioVolumes || cfg.hiddenImages;
+  if (hasAny) return;
+  const b = loadBundledBindings();
+  if (!b) return;
+  cfg.imageAudioMap = (b.imageAudioMap && typeof b.imageAudioMap === 'object') ? b.imageAudioMap : {};
+  cfg.audioVolumes = (b.audioVolumes && typeof b.audioVolumes === 'object') ? b.audioVolumes : {};
+  cfg.hiddenImages = Array.isArray(b.hiddenImages) ? b.hiddenImages : [];
+  saveConfig(cfg);
+}
+
+// 开发时(未打包,Resources 可写)把当前映射回写到仓库快照,方便随代码一起提交。
+// 打包后的 .app 包内 Resources 只读,直接跳过。
+function mirrorBindingsToBundle() {
+  if (app.isPackaged) return;
+  try {
+    const cfg = loadConfig();
+    const data = {
+      imageAudioMap: (cfg.imageAudioMap && typeof cfg.imageAudioMap === 'object') ? cfg.imageAudioMap : {},
+      audioVolumes: (cfg.audioVolumes && typeof cfg.audioVolumes === 'object') ? cfg.audioVolumes : {},
+      hiddenImages: Array.isArray(cfg.hiddenImages) ? cfg.hiddenImages : [],
+    };
+    fs.writeFileSync(BUNDLED_BINDINGS_PATH, JSON.stringify(data, null, 2));
+  } catch (e) {
+    // 仓库不可写(只读副本等)时静默忽略
+  }
 }
 
 function getUserDir() {
@@ -251,11 +295,13 @@ function reconcileConfig(imageNames, audioNames) {
     cfg.audioVolumes = volumes;
     cfg.hiddenImages = hidden;
     saveConfig(cfg);
+    mirrorBindingsToBundle();
   }
   return { map, volumes, hidden };
 }
 
 function scanAssets() {
+  maybeSeedBindings();
   const userDir = getUserDir();
   const images = [
     ...scanDir(BUNDLED_IMAGE_DIR, IMAGE_EXT),
@@ -478,6 +524,7 @@ ipcMain.handle('set-clip-map', (e, map) => {
   }
   cfg.imageAudioMap = clean;
   saveConfig(cfg);
+  mirrorBindingsToBundle();
   if (win && !win.isDestroyed()) win.webContents.send('clip-map', clean);
   return { ok: true };
 });
@@ -490,6 +537,7 @@ ipcMain.handle('set-audio-volume', (e, { name, volume }) => {
   vols[name] = v;
   cfg.audioVolumes = vols;
   saveConfig(cfg);
+  mirrorBindingsToBundle();
   if (win && !win.isDestroyed()) win.webContents.send('audio-volumes', vols);
   return { ok: true };
 });
@@ -501,6 +549,7 @@ ipcMain.handle('set-image-hidden', (e, { name, hidden }) => {
   else set.delete(name);
   cfg.hiddenImages = Array.from(set);
   saveConfig(cfg);
+  mirrorBindingsToBundle();
   if (win && !win.isDestroyed()) win.webContents.send('hidden-images', cfg.hiddenImages);
   return { ok: true };
 });
