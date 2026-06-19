@@ -23,7 +23,11 @@
       "main.js",
       "preload.js",
       "renderer/**",
-      "assets/**"
+      "assets/**",
+      "!assets/download_audio/**",
+      "!assets/小黑解说/**",
+      "!assets/images_backup/**",
+      "!assets/README.md"
     ],
     "directories": {
       "output": "release"
