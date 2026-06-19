@@ -26,8 +26,7 @@
       "assets/**",
       "!assets/download_audio/**",
       "!assets/小黑解说/**",
-      "!assets/images_backup/**",
-      "!assets/README.md"
+      "!assets/images_backup/**"
     ],
     "directories": {
       "output": "release"

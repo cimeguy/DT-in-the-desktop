@@ -147,6 +147,35 @@ document.getElementById('pinTop').addEventListener('click', async (e) => {
   toast(on ? '窗口已置顶,会始终显示在最前' : '已取消置顶');
 });
 
+// 跟随鼠标旋转开关
+const spinFollowBtn = document.getElementById('spinFollowToggle');
+function renderSpinFollow(on) {
+  spinFollowBtn.textContent = on ? '🌀 跟随旋转 ✓' : '🌀 旋转已关';
+  spinFollowBtn.title = on ? '宠物会随鼠标移动速度自转,点击关闭' : '点击开启:宠物随鼠标移动自转';
+  spinFollowBtn.classList.toggle('active', on);
+}
+spinFollowBtn.addEventListener('click', async () => {
+  const cur = spinFollowBtn.classList.contains('active');
+  const on = await window.managerAPI.setSpinFollow(!cur);
+  renderSpinFollow(on);
+  toast(on ? '已开启跟随鼠标旋转' : '已关闭跟随鼠标旋转');
+});
+
+// 旋转灵敏度(转速倍率)
+const spinMulEl = document.getElementById('spinMul');
+const spinMulValEl = document.getElementById('spinMulVal');
+let spinMulTimer = null;
+spinMulEl.addEventListener('input', () => {
+  const v = Number(spinMulEl.value);
+  spinMulValEl.textContent = v.toFixed(1) + 'x';
+  clearTimeout(spinMulTimer);
+  spinMulTimer = setTimeout(() => window.managerAPI.setSpinMul(v), 150);
+});
+window.managerAPI.getSpinMul().then((v) => {
+  spinMulEl.value = String(v);
+  spinMulValEl.textContent = Number(v).toFixed(1) + 'x';
+});
+
 // 通用拖拽区绑定
 function bindDrop(dropEl, inputEl, fileLabel, onPick, onClickOverride) {
   const stop = (e) => {
@@ -680,6 +709,7 @@ saveCutoutBtn.addEventListener('click', () =>
 );
 
 refreshDir();
+window.managerAPI.getSpinFollow().then(renderSpinFollow);
 
 const imageListEl = document.getElementById('imageList');
 const audioListEl = document.getElementById('audioList');

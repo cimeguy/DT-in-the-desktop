@@ -152,61 +152,58 @@ pet.addEventListener('mouseenter', () => {
   wobble();
 });
 
-// 鼠标在宠物上快速来回晃 -> 根据频率转圈
-let shakeTimes = [];
-let lastShakeX = null;
-let lastShakeDir = 0;
-let spinning = false;
-const SHAKE_WINDOW = 700;   // 统计最近 700ms 内的换向
-const SHAKE_MIN_DX = 6;     // 小于此位移忽略,避免抖动误判
-const SHAKE_TRIGGER = 4;    // 窗口内换向达到这么多次就转
+// 根据全局鼠标移动速度连续自转(鼠标不在图上也算;速度由主进程轮询光标得到)
+let spinAngle = 0;
+let angVel = 0;        // 当前角速度(度/秒)
+let latestSpeed = 0;   // 最近一次采样的位移(px / 40ms)
+let lastSpinT = performance.now();
+const SPEED_TO_DEG = 9;  // 位移 -> 角速度系数(再乘用户倍率)
+const MAX_ANG = 2600;    // 角速度上限(度/秒)
+let spinEnabled = true;  // 跟随鼠标旋转开关(管理页/环形菜单可关)
+let spinMul = 1.6;       // 转速倍率(管理页滑条可调)
+let nearFactor = 1;      // 离宠物越近越小 -> 转得越慢
 
-function resetShake() {
-  shakeTimes = [];
-  lastShakeX = null;
-  lastShakeDir = 0;
+// 光标到宠物中心的距离 -> 减速系数:近(<=NEAR)最慢,远(>=FAR)全速
+function nearToFactor(near) {
+  const NEAR = 70, FAR = 420, MIN = 0.18;
+  if (near <= NEAR) return MIN;
+  if (near >= FAR) return 1;
+  return MIN + (1 - MIN) * (near - NEAR) / (FAR - NEAR);
 }
 
-function trackShake(e) {
-  if (dragging || radialOpen || spinning) { resetShake(); return; }
-  const x = e.screenX;
-  if (lastShakeX === null) { lastShakeX = x; return; }
-  const dx = x - lastShakeX;
-  if (Math.abs(dx) < SHAKE_MIN_DX) return;
-  const dir = dx > 0 ? 1 : -1;
-  if (lastShakeDir && dir !== lastShakeDir) {
-    const now = performance.now();
-    shakeTimes.push(now);
-    shakeTimes = shakeTimes.filter((t) => now - t <= SHAKE_WINDOW);
-    if (shakeTimes.length >= SHAKE_TRIGGER) {
-      triggerSpin(shakeTimes.length);
-      resetShake();
-    }
-  }
-  lastShakeDir = dir;
-  lastShakeX = x;
-}
-
-function triggerSpin(intensity) {
-  if (spinning) return;
-  spinning = true;
-  // 换向越密 -> 时长越短 -> 转得越快(0.3s ~ 0.95s)
-  const dur = Math.max(0.3, 0.95 - (intensity - SHAKE_TRIGGER) * 0.1);
-  imgEl.classList.remove('wobble');
-  imgEl.style.setProperty('--spin-dur', dur + 's');
-  imgEl.classList.add('spin');
-}
-
-imgEl.addEventListener('animationend', (ev) => {
-  if (ev.animationName === 'petSpin') {
-    imgEl.classList.remove('spin');
-    spinning = false;
-  }
+window.petAPI.onMouseSpeed((e, data) => {
+  if (typeof data === 'number') { latestSpeed = data; return; }
+  latestSpeed = data.speed;
+  nearFactor = nearToFactor(data.near);
 });
+window.petAPI.onSpinFollow((e, on) => {
+  spinEnabled = !!on;
+  if (!spinEnabled) { latestSpeed = 0; angVel = 0; }
+});
+window.petAPI.onSpinMul((e, v) => { if (v) spinMul = v; });
 
-window.addEventListener('mousemove', trackShake);
-pet.addEventListener('mouseleave', resetShake);
-
+function spinTick(t) {
+  const dt = Math.min(0.05, (t - lastSpinT) / 1000);
+  lastSpinT = t;
+  if (dragging || radialOpen || !spinEnabled) {
+    angVel = 0;
+    latestSpeed = 0;
+  } else {
+    const target = Math.min(latestSpeed * SPEED_TO_DEG * spinMul * nearFactor, MAX_ANG);
+    angVel += (target - angVel) * 0.3;  // 平滑逼近目标速度(0.3 更跟手)
+    latestSpeed *= 0.6;                  // 无新采样时迅速衰减
+    if (angVel < 2 && target < 2) angVel = 0;
+  }
+  if (angVel > 0) {
+    spinAngle = (spinAngle + angVel * dt) % 360;
+    imgEl.style.transform = `rotate(${spinAngle}deg)`;
+  } else if (imgEl.style.transform) {
+    spinAngle = 0;
+    imgEl.style.transform = '';
+  }
+  requestAnimationFrame(spinTick);
+}
+requestAnimationFrame(spinTick);
 window.addEventListener('mousemove', (e) => {
   if (!dragging) return;
   const dx = e.screenX - startX;
@@ -258,6 +255,7 @@ const MAIN_ITEMS = [
   { key: 'playmode', ic: '🎵', lb: '换图模式' },
   { key: 'quit', ic: '✕', lb: '退出' },             // 右下角
   { key: 'size', ic: '🔍', lb: '图片大小' },
+  { key: 'spinfollow', ic: '🌀', lb: '跟随旋转', toggle: 'spinFollow' },
   { key: 'autolaunch', ic: '🚀', lb: '自启动', toggle: 'autoLaunch' },
   { key: 'rememberpos', ic: '📍', lb: '固定此处', toggle: 'rememberPos' },
 ];
@@ -391,6 +389,11 @@ async function onRadialClick(item, btn) {
       btn.querySelector('.ic').textContent = iconFor(item);
       btn.classList.toggle('on', radialState.muted);
       break;
+    case 'spinfollow':
+      radialState.spinFollow = await window.petAPI.toggleSpinFollow();
+      spinEnabled = radialState.spinFollow;
+      btn.classList.toggle('on', radialState.spinFollow);
+      break;
     case 'autolaunch':
       radialState.autoLaunch = await window.petAPI.toggleAutoLaunch();
       btn.classList.toggle('on', radialState.autoLaunch);
@@ -443,5 +446,6 @@ window.addEventListener('wheel', (e) => {
 (async () => {
   applyScale(await window.petAPI.getScale());
   muted = await window.petAPI.getMuted();
+  spinMul = await window.petAPI.getSpinMul();
   loadAssets();
 })();

@@ -515,6 +515,7 @@
 <body>
   <div class="titlebar">
     <div class="drag-spacer"></div>
+    <button id="spinFollowToggle" class="pin-fixed">🌀 跟随旋转</button>
     <button id="pinTop" class="pin-fixed">📌 置顶</button>
   </div>
   <div id="tip" class="tip"></div>
@@ -524,6 +525,13 @@
         <h2>管理素材<span class="slash"> /</span></h2>
       </div>
       <div class="sub">左列管音频、右列管图片。文件会复制进下面的保存目录,增删后桌宠会自动刷新生效。</div>
+    </div>
+
+    <div class="dirbar">
+      <span class="lab">跟随鼠标旋转灵敏度</span>
+      <input type="range" id="spinMul" min="0.3" max="4" step="0.1"
+             style="flex:1; min-width:0; accent-color:#ff8c1a; cursor:pointer;" />
+      <span id="spinMulVal" style="min-width:46px; text-align:right; color:#f6c000; font-weight:700; font-size:13px;">1.6x</span>
     </div>
 
     <div class="dirbar">

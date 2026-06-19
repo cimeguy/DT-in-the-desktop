@@ -195,6 +195,35 @@ function getRememberPos() {
   return !!loadConfig().rememberPos;
 }
 
+// 跟随鼠标旋转开关(默认开)
+let spinFollow = true;
+function getSpinFollow() {
+  const v = loadConfig().spinFollowMouse;
+  return v === undefined ? true : !!v;
+}
+function setSpinFollow(on) {
+  const cfg = loadConfig();
+  cfg.spinFollowMouse = !!on;
+  saveConfig(cfg);
+  spinFollow = cfg.spinFollowMouse;
+  if (win && !win.isDestroyed()) win.webContents.send('spin-follow', spinFollow);
+  return spinFollow;
+}
+
+// 旋转倍率:转速 = 鼠标速度 × 倍率(默认 1.6,范围 0.3~4)
+function getSpinMul() {
+  const v = Number(loadConfig().spinSpeedMul);
+  return Number.isFinite(v) && v > 0 ? v : 1.6;
+}
+function setSpinMul(v) {
+  const n = Math.min(4, Math.max(0.3, Number(v) || 1.6));
+  const cfg = loadConfig();
+  cfg.spinSpeedMul = n;
+  saveConfig(cfg);
+  if (win && !win.isDestroyed()) win.webContents.send('spin-mul', n);
+  return n;
+}
+
 function setRememberPos(on) {
   const cfg = loadConfig();
   cfg.rememberPos = !!on;
@@ -562,6 +591,10 @@ ipcMain.on('set-window-pos', (e, x, y) => {
 
 ipcMain.handle('get-user-dir', () => getUserDir());
 ipcMain.handle('get-download-dir', () => getDownloadDir());
+ipcMain.handle('get-spin-follow', () => getSpinFollow());
+ipcMain.handle('set-spin-follow', (e, on) => setSpinFollow(on));
+ipcMain.handle('get-spin-mul', () => getSpinMul());
+ipcMain.handle('set-spin-mul', (e, v) => setSpinMul(v));
 
 // 选本地音频/视频文件:默认从下载目录打开
 ipcMain.handle('pick-local-audio', async () => {
@@ -604,8 +637,10 @@ ipcMain.handle('get-menu-state', () => ({
   autoLaunch: getAutoLaunch(),
   rememberPos: getRememberPos(),
   playMode: getPlayMode(),
+  spinFollow: getSpinFollow(),
 }));
 ipcMain.handle('toggle-mute', () => setMuted(!getMuted()));
+ipcMain.handle('toggle-spin-follow', () => setSpinFollow(!getSpinFollow()));
 ipcMain.handle('set-play-mode', (e, mode) => setPlayMode(mode));
 ipcMain.handle('toggle-auto-launch', () => setAutoLaunch(!getAutoLaunch()));
 ipcMain.handle('toggle-remember-pos', () => setRememberPos(!getRememberPos()));
@@ -1190,11 +1225,35 @@ ipcMain.handle('rename-asset', (e, { path: filePath, newName }) => {
 
 app.whenReady().then(() => {
   ensureUserDirs();
+  spinFollow = getSpinFollow();
   createWindow();
+  startCursorSpeedWatch();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
+
+// 轮询全局光标位置,把移动速度发给宠物窗口(用于按速度自转,鼠标不在图上也算)
+let cursorWatchTimer = null;
+function startCursorSpeedWatch() {
+  let last = null;
+  if (cursorWatchTimer) clearInterval(cursorWatchTimer);
+  cursorWatchTimer = setInterval(() => {
+    if (!win || win.isDestroyed()) return;
+    if (!spinFollow) return;
+    let p;
+    try { p = screen.getCursorScreenPoint(); } catch (e) { return; }
+    if (last) {
+      const speed = Math.hypot(p.x - last.x, p.y - last.y);
+      if (speed >= 1) {
+        const b = win.getBounds();
+        const near = Math.hypot(p.x - (b.x + b.width / 2), p.y - (b.y + b.height / 2));
+        win.webContents.send('mouse-speed', { speed, near });
+      }
+    }
+    last = p;
+  }, 40);
+}
 
 app.on('window-all-closed', () => {
   app.quit();
