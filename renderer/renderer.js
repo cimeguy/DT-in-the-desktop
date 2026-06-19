@@ -9,7 +9,7 @@ let audioVolumes = {};
 let hiddenImages = new Set();
 let muted = false;
 let playMode = 'random';
-let listIndex = -1;
+let imgIndex = -1;
 let lastClipName = null;
 let currentImageName = null;
 let currentAudio = null;
@@ -73,7 +73,13 @@ function bounce() {
   imgEl.classList.add('bounce');
 }
 
-// 随机模式:优先用该图配的专属音频池,否则全局
+function wobble() {
+  imgEl.classList.remove('wobble');
+  void imgEl.offsetWidth;
+  imgEl.classList.add('wobble');
+}
+
+// 音频始终跟随当前图片的映射:有专属池就从池里随机,否则全局随机
 function pickFromPool() {
   let pool = assets.audio;
   const mapped = currentImageName && clipMap[currentImageName];
@@ -84,26 +90,28 @@ function pickFromPool() {
   return pool.length ? pick(pool) : null;
 }
 
-function selectClip() {
-  if (!assets.audio.length) return null;
-  if (playMode === 'list') {
-    listIndex = (listIndex + 1) % assets.audio.length;
-    return assets.audio[listIndex];
-  }
+// 播放模式控制「换图」方式:顺序 / 随机 / 固定当前图
+function selectImage() {
+  const vis = visibleImages();
+  if (!vis.length) return null;
   if (playMode === 'single') {
-    return assets.audio.find((a) => a.name === lastClipName) || pickFromPool();
+    return vis.find((im) => im.name === currentImageName) || vis[0];
   }
-  return pickFromPool();
+  if (playMode === 'list') {
+    imgIndex = (imgIndex + 1) % vis.length;
+    return vis[imgIndex];
+  }
+  return pick(vis);
 }
 
 function onClickPet() {
   bounce();
-  if (assets.images.length > 0) {
-    const img = pick(visibleImages());
+  const img = selectImage();
+  if (img) {
     currentImageName = img.name;
     imgEl.src = img.url;
   }
-  const clip = selectClip();
+  const clip = pickFromPool();
   if (clip) {
     lastClipName = clip.name;
     if (currentAudio) {
@@ -136,6 +144,12 @@ pet.addEventListener('mousedown', async (e) => {
   startX = e.screenX;
   startY = e.screenY;
   winStart = await window.petAPI.getWindowPos();
+});
+
+// 鼠标移到宠物上轻晃几下(菜单展开/拖动时不触发)
+pet.addEventListener('mouseenter', () => {
+  if (dragging || radialOpen) return;
+  wobble();
 });
 
 window.addEventListener('mousemove', (e) => {
@@ -186,7 +200,7 @@ window.addEventListener('mousemove', moveRadialHint);
 const MAIN_ITEMS = [
   { key: 'manage', ic: '📁', lb: '管理素材' },      // 正上方
   { key: 'mute', ic: '🔊', lb: '静音', toggle: 'muted' },
-  { key: 'playmode', ic: '🎵', lb: '播放模式' },
+  { key: 'playmode', ic: '🎵', lb: '换图模式' },
   { key: 'quit', ic: '✕', lb: '退出' },             // 右下角
   { key: 'size', ic: '🔍', lb: '图片大小' },
   { key: 'autolaunch', ic: '🚀', lb: '自启动', toggle: 'autoLaunch' },
@@ -202,9 +216,9 @@ const SIZE_ITEMS = [
 ];
 
 const PLAYMODE_ITEMS = [
-  { key: 'pm-list', ic: '🔢', lb: '列表顺序', mode: 'list' },
-  { key: 'pm-random', ic: '🔀', lb: '随机播放', mode: 'random' },
-  { key: 'pm-single', ic: '🔂', lb: '单曲循环', mode: 'single' },
+  { key: 'pm-list', ic: '🔢', lb: '顺序换图', mode: 'list' },
+  { key: 'pm-random', ic: '🔀', lb: '随机换图', mode: 'random' },
+  { key: 'pm-single', ic: '🔂', lb: '固定一张', mode: 'single' },
   { key: 'back', ic: '↩', lb: '返回' },
 ];
 
@@ -279,7 +293,7 @@ async function onRadialClick(item, btn) {
   if (item.mode) {
     radialState.playMode = await window.petAPI.setPlayMode(item.mode);
     playMode = radialState.playMode;
-    listIndex = -1;
+    imgIndex = -1;
     buildRadial();
     return;
   }
@@ -349,7 +363,7 @@ window.petAPI.onSetScale((e, scale) => applyScale(scale));
 window.petAPI.onClipMap((e, map) => { clipMap = map || {}; });
 window.petAPI.onAudioVolumes((e, v) => { audioVolumes = v || {}; });
 window.petAPI.onHiddenImages((e, h) => { hiddenImages = new Set(h || []); });
-window.petAPI.onSetPlayMode((e, m) => { if (m) { playMode = m; listIndex = -1; } });
+window.petAPI.onSetPlayMode((e, m) => { if (m) { playMode = m; imgIndex = -1; } });
 window.petAPI.onSetMuted((e, m) => {
   muted = !!m;
   if (muted && currentAudio) {
