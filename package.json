@@ -23,10 +23,13 @@
       "main.js",
       "preload.js",
       "renderer/**",
+      "tools/cutout_person",
+      "tools/cutout_person.swift",
       "assets/**",
       "!assets/download_audio/**",
       "!assets/小黑解说/**",
-      "!assets/images_backup/**"
+      "!assets/images_backup/**",
+      "!assets/待用素材/**"
     ],
     "directories": {
       "output": "release"
