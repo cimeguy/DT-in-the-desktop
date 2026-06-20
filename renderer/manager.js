@@ -1091,6 +1091,8 @@ function renderOne(container, items, isImage) {
       size.appendChild(sizeSlider);
       size.appendChild(sizePct);
       host.appendChild(size);
+
+      const vis = document.createElement('button');
       vis.className = 'vis';
       const syncVis = () => {
         const hidden = hiddenDraft.has(it.name);
