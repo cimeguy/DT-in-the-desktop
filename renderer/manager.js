@@ -73,23 +73,24 @@ function maskUser(p) {
   );
 }
 
-// 路径默认隐藏(只存已打码用户名的真实串),点小眼睛才显示
+// 路径默认隐藏(只把用户名打码,其余照常显示),点小眼睛才显示完整路径
 const dirShown = { user: false, download: false };
 const dirReal = { user: '', download: '' };
 
 function renderDirPath(key) {
   const el = key === 'user' ? dirPathEl : downloadPathEl;
+  const real = dirReal[key] || '';
   if (dirShown[key]) {
-    el.textContent = dirReal[key] || '—';
+    el.textContent = real || '—';
     el.classList.remove('masked');
   } else {
-    el.textContent = '••••••••••••••••';
+    el.textContent = real ? maskUser(real) : '—';
     el.classList.add('masked');
   }
 }
 
 function setDirPath(key, value) {
-  dirReal[key] = maskUser(value);
+  dirReal[key] = value || '';
   renderDirPath(key);
 }
 
