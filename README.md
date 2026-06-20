@@ -15,12 +15,25 @@ npm start                                      # 启动桌面宠物（等价于 
 
 ## 环境要求
 
-- **macOS**（窗口透明置顶等行为针对 macOS 调试；其他系统未测试）
-- **Node.js** 18 或更高版本（含 `npm`）
-- **ffmpeg**：音频切片 / 转码必需（用本地文件添加素材，装这一个就够了）
-- **you-get**（可选）：仅在用「在线链接」作为音频来源时才需要。B 站链接走 you-get（已实测）。
-- **yt-dlp**（基本不用，可不装）：只是 YouTube 等非 B 站链接的兜底，**尚未实测**；B 站和本地文件都不需要它。
-- **抠图工具（可选，仅「人物去背景」功能需要）**：macOS 13+ 与 Xcode 命令行工具里的 `swiftc`（详见下方「抠图工具」）
+按用途分两类:**开发/运行** 和 **打包**。
+
+**系统**
+- **macOS**(窗口透明置顶等行为针对 macOS 调试;其他系统未测试)
+
+**① 开发 / 运行宠物(必需)**
+- **Node.js** 18 或更高版本(含 `npm`)
+- **Electron** —— 不用单独装,`npm install` 会按 `package.json` 自动装好(`^33.0.0`)
+- **ffmpeg** —— 音频切片 / 转码必需(用本地文件添加素材,装这一个就够了)
+
+**② 打包成安装包(打 DMG / exe 时需要)**
+- **electron-builder** —— 不用单独装,`npm install` 会自动装好(`^25.1.8`,在 devDependencies 里)
+- **ffmpeg** —— 同上,打包前确保素材已处理好
+- **wine**(仅在 Mac 上打 **Windows** 安装包时需要;只打 macOS DMG 不用)
+
+**③ 可选工具(用到对应功能才装)**
+- **you-get** —— 仅用「B 站在线链接」作为音频来源时需要(已实测)
+- **yt-dlp** —— YouTube 等非 B 站链接的兜底,**尚未实测**,基本可不装
+- **swiftc(Xcode 命令行工具)+ macOS 13+** —— 仅「人物去背景」抠图功能需要(详见下方「抠图工具」)
 
 ### 一次性安装（全新 Mac 从零开始）
 
@@ -28,10 +41,16 @@ npm start                                      # 启动桌面宠物（等价于 
 # 1) 如未安装 Homebrew，先装它（macOS 包管理器）
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# 2) 安装 Node.js 和 ffmpeg（核心依赖，本地添加素材只需这些）
+# 2) 安装 Node.js 和 ffmpeg（开发/运行/打包都要用的核心依赖）
 brew install node ffmpeg
 
-# 3) 下载工具（可选，仅「在线链接」来源才需要）
+# 3) 安装项目内依赖(Electron + electron-builder，开发和打包都靠它)
+cd DT-in-the-desktop && npm install
+
+# 4) 可选:在 Mac 上打 Windows 安装包才需要 wine（只打 macOS DMG 可跳过）
+brew install --cask wine-stable
+
+# 5) 可选:用「在线链接」来源才需要
 brew install you-get    # B 站链接(已实测)
 # yt-dlp 基本用不上(YouTube 等兜底,尚未实测)，需要时再装：
 #   brew install yt-dlp
@@ -41,7 +60,9 @@ brew install you-get    # B 站链接(已实测)
 
 验证依赖是否就绪：
 ```bash
-node -v && ffmpeg -version | head -1     # 核心依赖
+node -v && npm -v                        # 开发/打包核心
+ffmpeg -version | head -1                # 音频处理核心
+npx electron-builder --version           # 打包工具(npm install 后可用)
 # you-get --version                      # 用在线链接时才需要
 ```
 
@@ -173,13 +194,16 @@ ls -lh release/*.dmg          # 6) 查看产物
 
 ## 依赖一览
 
-| 工具 | 用途 | 是否必需 |
-|------|------|------|
-| Node.js + Electron | 运行宠物窗口 | 必需 |
-| ffmpeg | 音频切片 / 转码 | 必需 |
-| you-get | B 站在线链接下载 | 仅「B 站链接」来源时需要(已实测) |
-| yt-dlp | YouTube 等非 B 站链接下载(带进度) | 兜底,**非 B 站链接尚未实测**,可不装 |
-| swiftc（Xcode CLT）+ macOS 13+ | 人物抠图去背景 | 仅用抠图功能时需要 |
+| 工具 | 用途 | 阶段 | 是否必需 |
+|------|------|------|------|
+| Node.js + npm | 运行 npm / 启动 / 打包的基础 | 开发 + 打包 | 必需 |
+| Electron(`npm install` 自动装) | 运行宠物窗口 | 开发 | 必需 |
+| electron-builder(`npm install` 自动装) | 打 DMG / exe 安装包 | 打包 | 打包时必需 |
+| ffmpeg | 音频切片 / 转码 | 开发(处理素材) | 必需 |
+| wine | 在 Mac 上打 Windows 安装包 | 打包 | 仅打 Win 包时需要 |
+| you-get | B 站在线链接下载 | 开发(可选) | 仅「B 站链接」来源时需要(已实测) |
+| yt-dlp | YouTube 等非 B 站链接下载(带进度) | 开发(可选) | 兜底,**非 B 站链接尚未实测**,可不装 |
+| swiftc（Xcode CLT）+ macOS 13+ | 人物抠图去背景 | 开发(可选) | 仅用抠图功能时需要 |
 
 安装方式见上方「环境要求」。
 
