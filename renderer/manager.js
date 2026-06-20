@@ -1061,35 +1061,37 @@ function renderOne(container, items, isImage) {
       });
       host.appendChild(prev);
 
-      // 每张图大小倍数:滑块 0.3x~2.5x,实时改变桌宠该图显示尺寸
+      // 每张图大小倍数:手写输入(0.3~2.5),实时改变桌宠该图显示尺寸
       const size = document.createElement('div');
       size.className = 'size';
       const sizeLbl = document.createElement('span');
       sizeLbl.className = 'size-lbl';
       sizeLbl.textContent = '大小';
-      const sizeSlider = document.createElement('input');
-      sizeSlider.type = 'range';
-      sizeSlider.min = '0.3';
-      sizeSlider.max = '2.5';
-      sizeSlider.step = '0.05';
+      const sizeInput = document.createElement('input');
+      sizeInput.type = 'number';
+      sizeInput.className = 'size-input';
+      sizeInput.min = '0.3';
+      sizeInput.max = '2.5';
+      sizeInput.step = '0.1';
       const curScale = scalesDraft[it.name] != null ? scalesDraft[it.name] : 1;
-      sizeSlider.value = String(curScale);
-      const sizePct = document.createElement('span');
-      sizePct.className = 'size-pct';
-      sizePct.textContent = Math.round(curScale * 100) + '%';
-      let sizeTimer = null;
-      sizeSlider.addEventListener('input', () => {
-        const v = Number(sizeSlider.value);
-        sizePct.textContent = Math.round(v * 100) + '%';
+      sizeInput.value = String(curScale);
+      const sizeUnit = document.createElement('span');
+      sizeUnit.className = 'size-unit';
+      sizeUnit.textContent = '倍';
+      const commitScale = () => {
+        let v = Number(sizeInput.value);
+        if (!v || Number.isNaN(v)) v = 1;
+        v = Math.min(2.5, Math.max(0.3, v));
+        v = Math.round(v * 100) / 100;
+        sizeInput.value = String(v);
         scalesDraft[it.name] = v;
-        clearTimeout(sizeTimer);
-        sizeTimer = setTimeout(() => {
-          window.managerAPI.setImageScale({ name: it.name, scale: v });
-        }, 200);
-      });
+        window.managerAPI.setImageScale({ name: it.name, scale: v });
+      };
+      sizeInput.addEventListener('change', commitScale);
+      sizeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sizeInput.blur(); });
       size.appendChild(sizeLbl);
-      size.appendChild(sizeSlider);
-      size.appendChild(sizePct);
+      size.appendChild(sizeInput);
+      size.appendChild(sizeUnit);
       host.appendChild(size);
 
       const vis = document.createElement('button');
