@@ -132,6 +132,27 @@ npm run dist           # 同时打 Mac + Win
 
 产物在 `release/` 目录。
 
+### 自己从零构建 DMG（无需 AI，照抄即可）
+
+在项目根目录依次执行下面这几条命令，就能打出 macOS 安装包：
+
+```bash
+cd DT-in-the-desktop          # 1) 进入项目目录
+npm install                   # 2) 安装依赖（首次或依赖更新后才需要）
+pkill -f electron 2>/dev/null # 3) 关掉正在运行的宠物（没开着可忽略报错）
+rm -rf release                # 4) 清掉上次的打包产物，避免残留
+npm run dist:mac              # 5) 打包，生成 arm64 + x64 两个 .dmg
+ls -lh release/*.dmg          # 6) 查看产物
+```
+
+打完会在 `release/` 看到两个文件：
+
+- `DT-in-the-desktop-<版本号>-arm64.dmg` —— Apple 芯片（M 系列）用
+- `DT-in-the-desktop-<版本号>.dmg` —— Intel 芯片用
+
+> 想改版本号：编辑根目录 `package.json` 里的 `"version"`（如改成 `1.1.0`），再重新执行上面第 5 步，文件名里的版本号会自动跟着变。
+
+
 ### 安装说明（发给别人时一并附上）
 
 **macOS：** 安装包未做苹果签名/公证，首次打开会提示「无法验证开发者」「来自身份不明的开发者」。
