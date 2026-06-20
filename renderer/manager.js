@@ -718,6 +718,7 @@ const audioListEl = document.getElementById('audioList');
 let allAudio = []; // 供图片行的配音选择使用
 let clipMapDraft = {}; // 当前编辑中的图片→音频映射
 let volumesDraft = {}; // 每个音频的音量(0~1)
+let scalesDraft = {}; // 每张图片的大小倍数(默认 1)
 let hiddenDraft = new Set(); // 「不显示」的图片名
 
 // 批量选择状态(按文件路径)
@@ -821,6 +822,7 @@ async function renderLists() {
   allAudio = assets.audio || [];
   clipMapDraft = JSON.parse(JSON.stringify(assets.map || {}));
   volumesDraft = JSON.parse(JSON.stringify(assets.volumes || {}));
+  scalesDraft = JSON.parse(JSON.stringify(assets.imageScales || {}));
   hiddenDraft = new Set(assets.hidden || []);
   curImages = assets.images || [];
   curAudio = assets.audio || [];
@@ -1059,7 +1061,36 @@ function renderOne(container, items, isImage) {
       });
       host.appendChild(prev);
 
-      const vis = document.createElement('button');
+      // 每张图大小倍数:滑块 0.3x~2.5x,实时改变桌宠该图显示尺寸
+      const size = document.createElement('div');
+      size.className = 'size';
+      const sizeLbl = document.createElement('span');
+      sizeLbl.className = 'size-lbl';
+      sizeLbl.textContent = '大小';
+      const sizeSlider = document.createElement('input');
+      sizeSlider.type = 'range';
+      sizeSlider.min = '0.3';
+      sizeSlider.max = '2.5';
+      sizeSlider.step = '0.05';
+      const curScale = scalesDraft[it.name] != null ? scalesDraft[it.name] : 1;
+      sizeSlider.value = String(curScale);
+      const sizePct = document.createElement('span');
+      sizePct.className = 'size-pct';
+      sizePct.textContent = Math.round(curScale * 100) + '%';
+      let sizeTimer = null;
+      sizeSlider.addEventListener('input', () => {
+        const v = Number(sizeSlider.value);
+        sizePct.textContent = Math.round(v * 100) + '%';
+        scalesDraft[it.name] = v;
+        clearTimeout(sizeTimer);
+        sizeTimer = setTimeout(() => {
+          window.managerAPI.setImageScale({ name: it.name, scale: v });
+        }, 200);
+      });
+      size.appendChild(sizeLbl);
+      size.appendChild(sizeSlider);
+      size.appendChild(sizePct);
+      host.appendChild(size);
       vis.className = 'vis';
       const syncVis = () => {
         const hidden = hiddenDraft.has(it.name);

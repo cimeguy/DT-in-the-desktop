@@ -22,6 +22,12 @@ let savedBounds = null;
 const MENU_SIZE = 380;
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 3;
+// 每张图可单独设大小倍数;最终屏上尺寸 = 全局缩放 × 当前图倍数,再夹到安全窗口范围
+const IMG_SCALE_MIN = 0.3;
+const IMG_SCALE_MAX = 2.5;
+const DISPLAY_MIN = 0.3;
+const DISPLAY_MAX = 5;
+let currentImageScale = 1; // 当前展示图片的倍数(不持久化,随切图变化)
 
 let win;
 let managerWin = null;
@@ -131,19 +137,21 @@ function applyScale(scale) {
   const cfg = loadConfig();
   cfg.scale = s;
   saveConfig(cfg);
+  // 屏上实际尺寸 = 全局缩放 × 当前图倍数(夹到安全范围),窗口与图片同步缩放不裁切
+  const eff = Math.min(DISPLAY_MAX, Math.max(DISPLAY_MIN, s * currentImageScale));
   if (win && !win.isDestroyed()) {
     if (radialOpen && savedBounds) {
       // 环形菜单展开期间窗口被临时放大,不改当前尺寸;
       // 只更新"恢复后"的目标尺寸(以中心为锚),关菜单时按新缩放还原
-      const nw = Math.round(BASE_W * s);
-      const nh = Math.round(BASE_H * s);
+      const nw = Math.round(BASE_W * eff);
+      const nh = Math.round(BASE_H * eff);
       const cx = savedBounds.x + savedBounds.width / 2;
       const cy = savedBounds.y + savedBounds.height / 2;
       savedBounds = { x: Math.round(cx - nw / 2), y: Math.round(cy - nh / 2), width: nw, height: nh };
     } else {
-      win.setSize(Math.round(BASE_W * s), Math.round(BASE_H * s));
+      win.setSize(Math.round(BASE_W * eff), Math.round(BASE_H * eff));
     }
-    win.webContents.send('set-scale', s);
+    win.webContents.send('set-scale', eff);
   }
   return s;
 }
@@ -293,6 +301,17 @@ function getHiddenImages() {
   return Array.isArray(h) ? h : [];
 }
 
+function getImageScales() {
+  const s = loadConfig().imageScales;
+  return (s && typeof s === 'object') ? s : {};
+}
+
+function clampImgScale(v) {
+  const n = Number(v);
+  if (!n || Number.isNaN(n)) return 1;
+  return Math.min(IMG_SCALE_MAX, Math.max(IMG_SCALE_MIN, n));
+}
+
 // 清理失效引用:删除/改名素材后,config 里残留的映射会让徽章计数虚高、
 // 图片配音指向不存在的音频。这里按当前实际文件名对齐,并持久化清理结果。
 function reconcileConfig(imageNames, audioNames) {
@@ -320,14 +339,22 @@ function reconcileConfig(imageNames, audioNames) {
   const hidden = rawHidden.filter((n) => imageNames.has(n));
   if (hidden.length !== rawHidden.length) changed = true;
 
+  const rawScales = (cfg.imageScales && typeof cfg.imageScales === 'object') ? cfg.imageScales : {};
+  const imageScales = {};
+  for (const n of Object.keys(rawScales)) {
+    if (imageNames.has(n) && Number(rawScales[n]) !== 1) imageScales[n] = rawScales[n];
+    else changed = true; // 图片已删,或倍数=1(默认值无需保存)
+  }
+
   if (changed) {
     cfg.imageAudioMap = map;
     cfg.audioVolumes = volumes;
     cfg.hiddenImages = hidden;
+    cfg.imageScales = imageScales;
     saveConfig(cfg);
     mirrorBindingsToBundle();
   }
-  return { map, volumes, hidden };
+  return { map, volumes, hidden, imageScales };
 }
 
 function scanAssets() {
@@ -343,13 +370,14 @@ function scanAssets() {
   ];
   const imageNames = new Set(images.map((i) => i.name));
   const audioNames = new Set(audio.map((a) => a.name));
-  const { map, volumes, hidden } = reconcileConfig(imageNames, audioNames);
+  const { map, volumes, hidden, imageScales } = reconcileConfig(imageNames, audioNames);
   return {
     images,
     audio,
     map,
     volumes,
     hidden,
+    imageScales,
     playMode: getPlayMode(),
   };
 }
@@ -583,6 +611,19 @@ ipcMain.handle('set-image-hidden', (e, { name, hidden }) => {
   if (win && !win.isDestroyed()) win.webContents.send('hidden-images', cfg.hiddenImages);
   return { ok: true };
 });
+// 逐张图片大小倍数;1 时清掉记录(=默认)。改的若是当前展示图,实时重算窗口
+ipcMain.handle('set-image-scale', (e, { name, scale }) => {
+  const cfg = loadConfig();
+  const map = (cfg.imageScales && typeof cfg.imageScales === 'object') ? cfg.imageScales : {};
+  const f = clampImgScale(scale);
+  if (f === 1) delete map[name];
+  else map[name] = f;
+  cfg.imageScales = map;
+  saveConfig(cfg);
+  mirrorBindingsToBundle();
+  if (win && !win.isDestroyed()) win.webContents.send('image-scales', map);
+  return { ok: true };
+});
 ipcMain.handle('get-window-pos', () => win.getPosition());
 ipcMain.on('set-window-pos', (e, x, y) => {
   win.setPosition(Math.round(x), Math.round(y));
@@ -629,6 +670,11 @@ ipcMain.on('zoom-pet', (e, delta) => {
 });
 ipcMain.on('set-pet-scale', (e, scale) => {
   applyScale(scale);
+});
+// 桌宠切到某张图时上报该图倍数,据此重算窗口尺寸(不动全局缩放)
+ipcMain.on('set-display-image-scale', (e, factor) => {
+  currentImageScale = clampImgScale(factor);
+  applyScale(getScale());
 });
 
 // ---- 环形右键菜单 ----
@@ -1198,6 +1244,10 @@ ipcMain.handle('rename-asset', (e, { path: filePath, newName }) => {
       if (Array.isArray(cfg.hiddenImages)) {
         cfg.hiddenImages = cfg.hiddenImages.map((n) => (n === oldName ? clean : n));
       }
+      if (cfg.imageScales && cfg.imageScales[oldName] != null) {
+        cfg.imageScales[clean] = cfg.imageScales[oldName];
+        delete cfg.imageScales[oldName];
+      }
     } else {
       if (cfg.imageAudioMap && typeof cfg.imageAudioMap === 'object') {
         for (const k of Object.keys(cfg.imageAudioMap)) {
@@ -1216,6 +1266,7 @@ ipcMain.handle('rename-asset', (e, { path: filePath, newName }) => {
       win.webContents.send('clip-map', cfg.imageAudioMap || {});
       win.webContents.send('audio-volumes', cfg.audioVolumes || {});
       win.webContents.send('hidden-images', cfg.hiddenImages || []);
+      win.webContents.send('image-scales', cfg.imageScales || {});
     }
     return { ok: true, name: clean };
   } catch (err) {

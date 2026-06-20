@@ -6,6 +6,7 @@ const pet = document.getElementById('pet');
 let assets = { images: [], audio: [] };
 let clipMap = {};
 let audioVolumes = {};
+let imageScales = {};
 let hiddenImages = new Set();
 let muted = false;
 let playMode = 'random';
@@ -29,6 +30,7 @@ async function loadAssets(showUrl) {
   assets = await window.petAPI.getAssets();
   clipMap = assets.map || {};
   audioVolumes = assets.volumes || {};
+  imageScales = assets.imageScales || {};
   hiddenImages = new Set(assets.hidden || []);
   if (assets.playMode) playMode = assets.playMode;
   if (assets.images.length > 0) {
@@ -39,6 +41,7 @@ async function loadAssets(showUrl) {
       : pick(vis);
     currentImageName = first.name;
     imgEl.src = showUrl || first.url;
+    applyImageScale();
   } else {
     hint.style.display = 'block';
     currentImageName = null;
@@ -52,6 +55,12 @@ function applyScale(scale) {
   const px = Math.round(BASE_IMG * s) + 'px';
   imgEl.style.maxWidth = px;
   imgEl.style.maxHeight = px;
+}
+
+// 把当前图片的大小倍数上报给主进程,由它重算窗口尺寸并回传 set-scale
+function applyImageScale() {
+  const f = (currentImageName && imageScales[currentImageName]) || 1;
+  window.petAPI.setDisplayImageScale(f);
 }
 
 // 去掉切片文件名里的日期后缀(_YYYYMMDD-HHMMSS),气泡只显示标题部分
@@ -110,6 +119,7 @@ function onClickPet() {
   if (img) {
     currentImageName = img.name;
     imgEl.src = img.url;
+    applyImageScale();
   }
   const clip = pickFromPool();
   if (clip) {
@@ -419,6 +429,11 @@ window.addEventListener('keydown', (e) => {
 window.petAPI.onReloadAssets((e, showUrl) => loadAssets(showUrl));
 window.petAPI.onSetScale((e, scale) => applyScale(scale));
 window.petAPI.onClipMap((e, map) => { clipMap = map || {}; });
+window.petAPI.onImageScales((e, m) => {
+  imageScales = m || {};
+  // 若调的正是当前展示的这张图,屏上大小实时跟着变
+  applyImageScale();
+});
 window.petAPI.onAudioVolumes((e, v) => {
   audioVolumes = v || {};
   // 若调的正是当前正在播放的这首,音量实时跟着动
