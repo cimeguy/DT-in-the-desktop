@@ -30,8 +30,10 @@ npm start                                      # 启动桌面宠物（等价于 
 - **ffmpeg** —— 同上,打包前确保素材已处理好
 - **wine**(仅在 Mac 上打 **Windows** 安装包时需要;只打 macOS DMG 不用)
 
-**③ 可选工具(用到对应功能才装)**
-- **you-get** —— 仅用「B 站在线链接」作为音频来源时需要(已实测)
+**③ 用「在线链接」加素材(用到此功能则必需)**
+- **you-get** —— 从在线链接(尤其 **B 站**)下载音频必需;B 站对 yt-dlp 有 412 风控,**只能靠 you-get**。只要你用在线链接来源,这一项就是必需的(仅纯本地文件添加素材时可不装)。
+
+**④ 可选工具(用到对应功能才装)**
 - **yt-dlp** —— YouTube 等非 B 站链接的兜底,**尚未实测**,基本可不装
 - **swiftc(Xcode 命令行工具)+ macOS 13+** —— 仅「人物去背景」抠图功能需要(详见下方「抠图工具」)
 
@@ -50,7 +52,7 @@ cd DT-in-the-desktop && npm install
 # 4) 可选:在 Mac 上打 Windows 安装包才需要 wine（只打 macOS DMG 可跳过）
 brew install --cask wine-stable
 
-# 5) 可选:用「在线链接」来源才需要
+# 5) 用「在线链接」来源必需(B 站只能靠 you-get)
 brew install you-get    # B 站链接(已实测)
 # yt-dlp 基本用不上(YouTube 等兜底,尚未实测)，需要时再装：
 #   brew install yt-dlp
@@ -201,7 +203,7 @@ ls -lh release/*.dmg          # 6) 查看产物
 | electron-builder(`npm install` 自动装) | 打 DMG / exe 安装包 | 打包 | 打包时必需 |
 | ffmpeg | 音频切片 / 转码 | 开发(处理素材) | 必需 |
 | wine | 在 Mac 上打 Windows 安装包 | 打包 | 仅打 Win 包时需要 |
-| you-get | B 站在线链接下载 | 开发(可选) | 仅「B 站链接」来源时需要(已实测) |
+| you-get | B 站在线链接下载 | 开发(在线链接) | 用在线链接来源时**必需**(B 站只能靠它,已实测) |
 | yt-dlp | YouTube 等非 B 站链接下载(带进度) | 开发(可选) | 兜底,**非 B 站链接尚未实测**,可不装 |
 | swiftc（Xcode CLT）+ macOS 13+ | 人物抠图去背景 | 开发(可选) | 仅用抠图功能时需要 |
 
